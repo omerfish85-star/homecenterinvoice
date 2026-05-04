@@ -8,7 +8,10 @@ from pathlib import Path
 
 import pandas as pd
 
-DATA_DIR = Path(__file__).parent / "data"
+import os
+_env_data_dir = os.getenv("DATA_DIR")
+DATA_DIR = Path(_env_data_dir) if _env_data_dir else Path(__file__).parent / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 CUSTOMS_RATE_USD_ILS = 3.70  # default fallback rate
 
 # Required columns per entity

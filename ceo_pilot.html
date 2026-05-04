@@ -2094,7 +2094,11 @@ function approveLinePI(invoiceId, lineNo, btn) {
 }
 
 // ── API BRIDGE ───────────────────────────────────────────────────────────────
-const API_BASE = 'http://localhost:5001/api';
+// When opened as a local file (file://) point at the dev server.
+// When served by Flask in production, use a same-origin relative path.
+const API_BASE = window.location.protocol === 'file:'
+  ? 'http://localhost:5001/api'
+  : '/api';
 
 function setApiBadge(state, text) {
   const dot   = document.getElementById('api-dot');
