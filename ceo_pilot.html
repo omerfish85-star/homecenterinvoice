@@ -483,7 +483,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
     <!-- VIEW: SUPPLIERS                                       -->
     <!-- ══════════════════════════════════════════════════════ -->
     <div class="view" id="view-suppliers">
-      <div class="section-lbl">ניהול ספקים</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="section-lbl" style="margin-bottom:0">ניהול ספקים</div>
+        <button id="sup-sync-btn" class="btn btn-out btn-sm" onclick="syncSuppliersFromAPI()">↻ סנכרן עם API</button>
+      </div>
       <p style="font-size:13px;color:var(--t2);margin-bottom:16px">כל ספק שמוסף כאן יוכל לקבל מחירון ולהיות מזוהה אוטומטית ממייל.</p>
 
       <div class="card">
@@ -551,7 +554,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
     <!-- VIEW: PRICES                                          -->
     <!-- ══════════════════════════════════════════════════════ -->
     <div class="view" id="view-prices">
-      <div class="section-lbl">ניהול מחירונים</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="section-lbl" style="margin-bottom:0">ניהול מחירונים</div>
+        <button id="price-sync-btn" class="btn btn-out btn-sm" onclick="syncPricesFromAPI()">↻ סנכרן עם API</button>
+      </div>
       <p style="font-size:13px;color:var(--t2);margin-bottom:16px">הגדר מחיר מוסכם לכל קוד IMP לכל ספק. המערכת תשווה כל חשבונית למחירון.</p>
 
       <div class="card">
@@ -812,6 +818,31 @@ function nav(id, el) {
 }
 
 // ── SUPPLIERS ────────────────────────────────────────────────────────────────
+// ── SUPPLIER API SYNC ─────────────────────────────────────────────────────────
+async function syncSuppliersFromAPI() {
+  const btn = document.getElementById('sup-sync-btn');
+  if (btn) { btn.textContent = '↻ סורק...'; btn.disabled = true; }
+  try {
+    const res  = await fetch(`${API_BASE}/suppliers`, { signal: AbortSignal.timeout(5000) });
+    const rows = await res.json();
+    // Normalise API rows to local state shape
+    state.suppliers = rows.map(r => ({
+      code:       r.code,
+      name:       r.name,
+      currencies: r.currencies ? String(r.currencies).split('|') : ['ILS'],
+      patterns:   r.email_patterns || '',
+      type:       r.type || 'custom',
+    }));
+    renderSuppliers();
+    populateSupplierSelects();
+    showToast(`✅ ${rows.length} ספקים נטענו מה-API`);
+  } catch {
+    showToast('⚠ לא ניתן לטעון ספקים מה-API');
+  } finally {
+    if (btn) { btn.textContent = '↻ סנכרן עם API'; btn.disabled = false; }
+  }
+}
+
 function addSupplier() {
   const code = document.getElementById('s-code').value.trim().toUpperCase();
   const name = document.getElementById('s-name').value.trim();
@@ -822,6 +853,8 @@ function addSupplier() {
   if (!ils && !usd) { alert('יש לבחור לפחות מטבע אחד.'); return; }
   const currencies = [...(ils?['ILS']:[]), ...(usd?['USD']:[])];
   const pats = document.getElementById('s-patterns').value.trim();
+
+  // Optimistic local update
   state.suppliers.push({code, name, currencies, patterns:pats, type:'custom'});
   logAction('ADD_SUPPLIER', `${code} – ${name} (${currencies.join('+')})`, 'ok');
   ['s-code','s-name','s-patterns'].forEach(id => document.getElementById(id).value='');
@@ -829,6 +862,22 @@ function addSupplier() {
   document.getElementById('s-cur-usd').checked=false;
   renderSuppliers();
   populateSupplierSelects();
+
+  // Async API sync
+  fetch(`${API_BASE}/suppliers`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      code, name,
+      currencies: currencies.join('|'),
+      email_patterns: pats,
+      type: 'custom',
+    }),
+    signal: AbortSignal.timeout(5000),
+  }).then(r => r.json()).then(d => {
+    if (d.error) showToast(`⚠ API: ${d.error}`);
+    else showToast(`✅ ספק ${code} נשמר ב-API`);
+  }).catch(() => showToast('⚠ ספק נוסף מקומית בלבד (API לא זמין)'));
 }
 
 function removeSupplier(code) {
@@ -837,6 +886,13 @@ function removeSupplier(code) {
   state.prices    = state.prices.filter(p => p.sup!==code);
   logAction('DELETE_SUPPLIER', code, 'ok');
   renderSuppliers();
+
+  fetch(`${API_BASE}/suppliers/${encodeURIComponent(code)}`, {
+    method: 'DELETE', signal: AbortSignal.timeout(5000),
+  }).then(r => r.json()).then(d => {
+    if (d.error) showToast(`⚠ API: ${d.error}`);
+    else showToast(`🗑 ספק ${code} נמחק מה-API`);
+  }).catch(() => showToast('⚠ נמחק מקומית בלבד (API לא זמין)'));
 }
 
 function renderSuppliers() {
@@ -845,7 +901,7 @@ function renderSuppliers() {
     <tr>
       <td><strong>${s.code}</strong></td>
       <td>${s.name}</td>
-      <td>${(s.currencies||[s.currency]).map(c=>`<span class="tag tag-bl" style="margin-left:3px">${c}</span>`).join('')}</td>
+      <td>${(s.currencies||[s.currency||'ILS']).map(c=>`<span class="tag tag-bl" style="margin-left:3px">${c}</span>`).join('')}</td>
       <td style="font-size:11px;color:var(--gy)">${s.patterns||'—'}</td>
       <td>${s.type==='builtin'?'<span class="tag tag-gy">מובנה</span>':'<span class="tag tag-or">מותאם</span>'}</td>
       <td>${s.type==='custom'?`<button class="btn btn-re btn-sm" onclick="removeSupplier('${s.code}')">מחק</button>`:'—'}</td>
@@ -872,6 +928,32 @@ function updateImpOpts() {
     `<option value="${r.id}">${r.code} – ${r.desc}</option>`).join('');
 }
 
+// ── RATE CARDS API SYNC ───────────────────────────────────────────────────────
+async function syncPricesFromAPI() {
+  const btn = document.getElementById('price-sync-btn');
+  if (btn) { btn.textContent = '↻ סורק...'; btn.disabled = true; }
+  try {
+    const res  = await fetch(`${API_BASE}/rate-cards`, { signal: AbortSignal.timeout(5000) });
+    const rows = await res.json();
+    // Map API rate_cards format → local prices format
+    state.prices = rows.map(r => ({
+      sup:  r.vendor_code,
+      imp:  r.imp_code,
+      desc: r.service_name || r.imp_code,
+      price: parseFloat(r.unit_price) || 0,
+      cur:  r.currency,
+      from: r.month,
+      to:   '',
+    }));
+    renderPrices();
+    showToast(`✅ ${rows.length} מחירים נטענו מה-API`);
+  } catch {
+    showToast('⚠ לא ניתן לטעון מחירים מה-API');
+  } finally {
+    if (btn) { btn.textContent = '↻ סנכרן עם API'; btn.disabled = false; }
+  }
+}
+
 function addPrice() {
   const supCode = document.getElementById('p-sup').value;
   const impId   = parseInt(document.getElementById('p-imp').value);
@@ -884,18 +966,54 @@ function addPrice() {
   }
   if (!/^\d{4}-\d{2}$/.test(from)) { alert('פורמט תאריך: YYYY-MM'); return; }
   const to = document.getElementById('p-to').value.trim();
+
+  // Map IMP code number → IMP-0XX string expected by API
+  const impCodeStr = `IMP-${String(impRow.code).padStart(3,'0')}`;
+
+  // Optimistic local update
   state.prices.push({sup:supCode, imp:impRow.code, desc:impRow.desc, price, cur, from, to});
   logAction('ADD_PRICE', `${supCode} / IMP ${impRow.code} – ${price} ${cur}`, 'ok');
   document.getElementById('p-price').value='';
   document.getElementById('p-from').value='';
   document.getElementById('p-to').value='';
   renderPrices();
+
+  // Async API sync
+  fetch(`${API_BASE}/rate-cards`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      vendor_code:  supCode,
+      month:        from,
+      imp_code:     impCodeStr,
+      service_name: impRow.desc,
+      unit_price:   price,
+      currency:     cur,
+      unit:         '',
+    }),
+    signal: AbortSignal.timeout(5000),
+  }).then(r => r.json()).then(d => {
+    if (d.error) showToast(`⚠ API: ${d.error}`);
+    else showToast(`✅ מחיר ${supCode}/${impCodeStr} נשמר ב-API`);
+  }).catch(() => showToast('⚠ מחיר נוסף מקומית בלבד (API לא זמין)'));
 }
 
 function removePrice(idx) {
+  const p = state.prices[idx];
   state.prices.splice(idx, 1);
-  logAction('DELETE_PRICE', `שורה ${idx+1}`, 'ok');
+  logAction('DELETE_PRICE', `${p.sup} / IMP ${p.imp}`, 'ok');
   renderPrices();
+
+  const impCodeStr = `IMP-${String(p.imp).padStart(3,'0')}`;
+  fetch(`${API_BASE}/rate-cards`, {
+    method: 'DELETE',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ vendor_code: p.sup, month: p.from, imp_code: impCodeStr }),
+    signal: AbortSignal.timeout(5000),
+  }).then(r => r.json()).then(d => {
+    if (d.error) showToast(`⚠ API: ${d.error}`);
+    else showToast(`🗑 מחיר נמחק מה-API`);
+  }).catch(() => showToast('⚠ נמחק מקומית בלבד (API לא זמין)'));
 }
 
 function renderPrices() {

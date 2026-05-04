@@ -2,6 +2,7 @@
 Invoice data processor — loads CSV/Excel files into Pandas DataFrames
 and exposes clean, serialisable summaries for the Flask API.
 """
+import io
 import re
 from pathlib import Path
 
@@ -9,6 +10,12 @@ import pandas as pd
 
 DATA_DIR = Path(__file__).parent / "data"
 CUSTOMS_RATE_USD_ILS = 3.70  # default fallback rate
+
+# Required columns per entity
+_REQUIRED = {
+    "suppliers":  ["code", "name"],
+    "rate_cards": ["vendor_code", "month", "imp_code", "unit_price", "currency"],
+}
 
 
 # ── loaders ──────────────────────────────────────────────────────────────────
@@ -18,6 +25,10 @@ def _load(filename: str) -> pd.DataFrame:
     if path.suffix in (".xlsx", ".xls"):
         return pd.read_excel(path)
     return pd.read_csv(path)
+
+
+def _save(df: pd.DataFrame, filename: str) -> None:
+    (DATA_DIR / filename).write_text(df.to_csv(index=False), encoding="utf-8")
 
 
 def load_all() -> dict[str, pd.DataFrame]:
@@ -33,15 +44,14 @@ def load_all() -> dict[str, pd.DataFrame]:
 # ── KPI summary ──────────────────────────────────────────────────────────────
 
 def kpi_summary(dfs: dict) -> dict:
-    inv = dfs["invoices"].copy()
+    inv   = dfs["invoices"].copy()
     lines = dfs["invoice_lines"].copy()
 
     total_invoices = len(inv)
-    pending   = int((inv["status"] == "pending").sum())
-    approved  = int((inv["status"] == "approved").sum())
-    discrepancy = int((inv["status"] == "discrepancy").sum())
+    pending        = int((inv["status"] == "pending").sum())
+    approved       = int((inv["status"] == "approved").sum())
+    discrepancy    = int((inv["status"] == "discrepancy").sum())
 
-    # Convert all amounts to ILS for comparison
     inv["total_ils"] = inv.apply(
         lambda r: r["total_amount"] * CUSTOMS_RATE_USD_ILS
         if r["currency"] == "USD" else r["total_amount"],
@@ -49,67 +59,55 @@ def kpi_summary(dfs: dict) -> dict:
     )
     total_value_ils = float(inv["total_ils"].sum())
 
-    # Count discrepancy lines
     bad_lines = lines[lines["ok"].astype(str).str.lower() == "false"]
-    total_discrepancy_lines = len(bad_lines)
-
     return {
-        "total_invoices": total_invoices,
-        "pending": pending,
-        "approved": approved,
-        "discrepancy": discrepancy,
-        "total_value_ils": round(total_value_ils, 2),
-        "discrepancy_lines": total_discrepancy_lines,
+        "total_invoices":    total_invoices,
+        "pending":           pending,
+        "approved":          approved,
+        "discrepancy":       discrepancy,
+        "total_value_ils":   round(total_value_ils, 2),
+        "discrepancy_lines": len(bad_lines),
     }
 
 
 # ── invoice detail ────────────────────────────────────────────────────────────
 
 def invoice_detail(dfs: dict, invoice_id: str) -> dict | None:
-    inv = dfs["invoices"]
-    row = inv[inv["invoice_id"] == invoice_id]
+    row = dfs["invoices"][dfs["invoices"]["invoice_id"] == invoice_id]
     if row.empty:
         return None
-
     inv_dict = row.iloc[0].where(pd.notna(row.iloc[0]), None).to_dict()
-
-    lines = dfs["invoice_lines"]
-    lines_rows = lines[lines["invoice_id"] == invoice_id].copy()
-    lines_rows = lines_rows.where(pd.notna(lines_rows), None)
-    inv_dict["lines"] = lines_rows.to_dict(orient="records")
-
+    lines_rows = dfs["invoice_lines"][
+        dfs["invoice_lines"]["invoice_id"] == invoice_id
+    ].copy()
+    inv_dict["lines"] = lines_rows.where(pd.notna(lines_rows), None).to_dict(orient="records")
     return inv_dict
 
 
 # ── price-check ───────────────────────────────────────────────────────────────
 
 def price_check(dfs: dict, invoice_id: str) -> list[dict]:
-    """
-    For each line in the invoice, look up the agreed price from rate_cards
-    and compute the variance.  Returns a list of check results.
-    """
     detail = invoice_detail(dfs, invoice_id)
     if detail is None:
         return []
 
-    rate_cards = dfs["rate_cards"]
+    rate_cards  = dfs["rate_cards"]
     vendor_code = _vendor_code(dfs["suppliers"], detail.get("vendor", ""))
-    month = detail.get("month", "")
+    month       = detail.get("month", "")
 
     results = []
     for line in detail["lines"]:
-        imp = line.get("imp_code", "")
+        imp    = line.get("imp_code", "")
         billed = float(line.get("billed_amount") or 0)
 
         agreed_row = rate_cards[
             (rate_cards["vendor_code"] == vendor_code) &
-            (rate_cards["month"] == month) &
-            (rate_cards["imp_code"] == imp)
+            (rate_cards["month"]       == month) &
+            (rate_cards["imp_code"]    == imp)
         ]
-
         if agreed_row.empty:
-            agreed = line.get("agreed_price")
-            agreed = float(agreed) if agreed else None
+            raw = line.get("agreed_price")
+            agreed = float(raw) if raw else None
         else:
             agreed = float(agreed_row.iloc[0]["unit_price"])
 
@@ -118,7 +116,7 @@ def price_check(dfs: dict, invoice_id: str) -> list[dict]:
         if agreed is not None and agreed > 0:
             variance_pct = round((billed - agreed) / agreed * 100, 2)
             status = "ok" if abs(variance_pct) < 0.01 else "discrepancy"
-        elif line.get("ok") is True or str(line.get("ok", "")).lower() == "true":
+        elif str(line.get("ok", "")).lower() == "true":
             status = "ok"
 
         results.append({
@@ -131,31 +129,14 @@ def price_check(dfs: dict, invoice_id: str) -> list[dict]:
             "status":       status,
             "note":         line.get("note"),
         })
-
     return results
-
-
-def _vendor_code(suppliers_df: pd.DataFrame, vendor_name: str) -> str:
-    match = suppliers_df[suppliers_df["name"] == vendor_name]
-    if not match.empty:
-        return str(match.iloc[0]["code"])
-    # fallback: first token of name upper-cased
-    return vendor_name.split()[0].upper()[:6] if vendor_name else ""
 
 
 # ── IMP text matcher ─────────────────────────────────────────────────────────
 
 def match_imp(dfs: dict, text: str) -> dict | None:
-    """
-    Given raw invoice line text, return the best-matching IMP rule
-    using keyword_pattern (regex) with confidence score.
-    Returns None if no match exceeds threshold.
-    """
-    imp_df = dfs["imp_mapping"].copy()
-    best = None
-    best_conf = 0
-
-    for _, row in imp_df.iterrows():
+    best, best_conf = None, 0
+    for _, row in dfs["imp_mapping"].iterrows():
         pattern = str(row.get("keyword_pattern", ""))
         if not pattern:
             continue
@@ -167,11 +148,210 @@ def match_imp(dfs: dict, text: str) -> dict | None:
                     best = row.where(pd.notna(row), None).to_dict()
         except re.error:
             pass
-
     return best
 
 
-# ── serialisers ──────────────────────────────────────────────────────────────
+# ── SUPPLIERS CRUD ────────────────────────────────────────────────────────────
+
+def add_supplier(dfs: dict, data: dict) -> tuple[dict, str | None]:
+    """
+    Add a new supplier.  Returns (record, error_message).
+    """
+    code = str(data.get("code", "")).strip().upper()
+    name = str(data.get("name", "")).strip()
+    if not code or not name:
+        return {}, "code and name are required"
+
+    df = dfs["suppliers"]
+    if code in df["code"].values:
+        return {}, f"Supplier code '{code}' already exists"
+
+    currencies    = str(data.get("currencies", "ILS"))
+    email_patterns = str(data.get("email_patterns", ""))
+    sup_type      = str(data.get("type", "custom"))
+
+    new_row = pd.DataFrame([{
+        "code":           code,
+        "name":           name,
+        "currencies":     currencies,
+        "email_patterns": email_patterns,
+        "type":           sup_type,
+    }])
+    dfs["suppliers"] = pd.concat([df, new_row], ignore_index=True)
+    _save(dfs["suppliers"], "suppliers.csv")
+    return new_row.iloc[0].to_dict(), None
+
+
+def remove_supplier(dfs: dict, code: str) -> tuple[bool, str | None]:
+    """
+    Remove a supplier by code (only custom ones).
+    Returns (success, error_message).
+    """
+    df  = dfs["suppliers"]
+    row = df[df["code"] == code]
+    if row.empty:
+        return False, f"Supplier '{code}' not found"
+    if str(row.iloc[0].get("type", "")) == "builtin":
+        return False, "Cannot delete built-in suppliers"
+
+    dfs["suppliers"] = df[df["code"] != code].reset_index(drop=True)
+    _save(dfs["suppliers"], "suppliers.csv")
+    return True, None
+
+
+def import_suppliers_excel(dfs: dict, file_bytes: bytes) -> dict:
+    """
+    Parse an Excel/CSV upload and merge into the suppliers DataFrame.
+    Required columns: code, name
+    Optional: currencies, email_patterns, type
+    Returns {imported, skipped, errors}.
+    """
+    try:
+        src = io.BytesIO(file_bytes)
+        raw = pd.read_excel(src) if file_bytes[:4] in (b'PK\x03\x04', b'\xd0\xcf\x11\xe0') \
+              else pd.read_csv(io.BytesIO(file_bytes))
+    except Exception as e:
+        return {"imported": 0, "skipped": 0, "errors": [str(e)]}
+
+    raw.columns = [c.strip().lower().replace(" ", "_") for c in raw.columns]
+
+    missing = [c for c in _REQUIRED["suppliers"] if c not in raw.columns]
+    if missing:
+        return {"imported": 0, "skipped": 0,
+                "errors": [f"Missing columns: {', '.join(missing)}"]}
+
+    imported, skipped, errors = 0, 0, []
+    for i, row in raw.iterrows():
+        _, err = add_supplier(dfs, row.where(pd.notna(row), "").to_dict())
+        if err:
+            skipped += 1
+            errors.append(f"Row {i + 2}: {err}")
+        else:
+            imported += 1
+
+    return {"imported": imported, "skipped": skipped, "errors": errors}
+
+
+# ── RATE CARDS CRUD ───────────────────────────────────────────────────────────
+
+def add_rate_card(dfs: dict, data: dict) -> tuple[dict, str | None]:
+    """
+    Add a price entry.  Returns (record, error_message).
+    """
+    required = _REQUIRED["rate_cards"]
+    missing  = [k for k in required if not str(data.get(k, "")).strip()]
+    if missing:
+        return {}, f"Missing fields: {', '.join(missing)}"
+
+    vendor_code = str(data["vendor_code"]).strip().upper()
+    month       = str(data["month"]).strip()
+    imp_code    = str(data["imp_code"]).strip().upper()
+
+    # Validate vendor exists
+    if vendor_code not in dfs["suppliers"]["code"].values:
+        return {}, f"Vendor code '{vendor_code}' not found in suppliers"
+
+    # Validate month format YYYY-MM
+    if not re.match(r"^\d{4}-\d{2}$", month):
+        return {}, "month must be YYYY-MM format"
+
+    try:
+        unit_price = float(data["unit_price"])
+    except (ValueError, TypeError):
+        return {}, "unit_price must be a number"
+
+    df  = dfs["rate_cards"]
+    dup = df[
+        (df["vendor_code"] == vendor_code) &
+        (df["month"]       == month) &
+        (df["imp_code"]    == imp_code)
+    ]
+    if not dup.empty:
+        # Update existing entry instead of duplicating
+        idx = dup.index[0]
+        dfs["rate_cards"].at[idx, "unit_price"]   = unit_price
+        dfs["rate_cards"].at[idx, "currency"]     = str(data.get("currency", "ILS"))
+        dfs["rate_cards"].at[idx, "service_name"] = str(data.get("service_name", ""))
+        dfs["rate_cards"].at[idx, "unit"]         = str(data.get("unit", ""))
+        _save(dfs["rate_cards"], "rate_cards.csv")
+        return dfs["rate_cards"].iloc[idx].to_dict(), None
+
+    new_row = pd.DataFrame([{
+        "vendor_code":  vendor_code,
+        "month":        month,
+        "imp_code":     imp_code,
+        "service_name": str(data.get("service_name", "")),
+        "unit_price":   unit_price,
+        "currency":     str(data.get("currency", "ILS")),
+        "unit":         str(data.get("unit", "")),
+    }])
+    dfs["rate_cards"] = pd.concat([df, new_row], ignore_index=True)
+    _save(dfs["rate_cards"], "rate_cards.csv")
+    return new_row.iloc[0].to_dict(), None
+
+
+def remove_rate_card(dfs: dict, vendor_code: str, month: str, imp_code: str) -> tuple[bool, str | None]:
+    """Remove a rate card entry. Returns (success, error_message)."""
+    df  = dfs["rate_cards"]
+    mask = (
+        (df["vendor_code"] == vendor_code.upper()) &
+        (df["month"]       == month) &
+        (df["imp_code"]    == imp_code.upper())
+    )
+    if not mask.any():
+        return False, "Rate card entry not found"
+
+    dfs["rate_cards"] = df[~mask].reset_index(drop=True)
+    _save(dfs["rate_cards"], "rate_cards.csv")
+    return True, None
+
+
+def import_rate_cards_excel(dfs: dict, file_bytes: bytes, vendor_code: str) -> dict:
+    """
+    Parse an Excel/CSV upload for rate cards.
+    Required columns: imp_code, unit_price, currency, month (or taken from filename).
+    Returns {imported, skipped, errors}.
+    """
+    try:
+        src = io.BytesIO(file_bytes)
+        raw = pd.read_excel(src) if file_bytes[:4] in (b'PK\x03\x04', b'\xd0\xcf\x11\xe0') \
+              else pd.read_csv(io.BytesIO(file_bytes))
+    except Exception as e:
+        return {"imported": 0, "skipped": 0, "errors": [str(e)]}
+
+    raw.columns = [c.strip().lower().replace(" ", "_") for c in raw.columns]
+
+    required = ["imp_code", "unit_price", "currency"]
+    missing  = [c for c in required if c not in raw.columns]
+    if missing:
+        return {"imported": 0, "skipped": 0,
+                "errors": [f"Missing columns: {', '.join(missing)}"]}
+
+    imported, skipped, errors = 0, 0, []
+    for i, row in raw.iterrows():
+        rec = row.where(pd.notna(row), "").to_dict()
+        rec["vendor_code"] = vendor_code.upper()
+        if "month" not in rec or not rec["month"]:
+            from datetime import date
+            rec["month"] = date.today().strftime("%Y-%m")
+        _, err = add_rate_card(dfs, rec)
+        if err:
+            skipped += 1
+            errors.append(f"Row {i + 2}: {err}")
+        else:
+            imported += 1
+
+    return {"imported": imported, "skipped": skipped, "errors": errors}
+
+
+# ── helpers ───────────────────────────────────────────────────────────────────
+
+def _vendor_code(suppliers_df: pd.DataFrame, vendor_name: str) -> str:
+    match = suppliers_df[suppliers_df["name"] == vendor_name]
+    if not match.empty:
+        return str(match.iloc[0]["code"])
+    return vendor_name.split()[0].upper()[:6] if vendor_name else ""
+
 
 def df_to_records(df: pd.DataFrame) -> list[dict]:
     return df.where(pd.notna(df), None).to_dict(orient="records")

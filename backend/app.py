@@ -1,6 +1,6 @@
 """
-HomCenter Invoice API — Phase 1
-Flask server that exposes invoice data processed by Pandas.
+HomCenter Invoice API — Phase 3
+Flask server with full CRUD for suppliers and rate cards.
 
 Run:  python app.py
       (or)  flask --app app run --port 5001 --debug
@@ -16,17 +16,22 @@ from processor import (
     price_check,
     match_imp,
     df_to_records,
+    # Phase 3 — CRUD
+    add_supplier,
+    remove_supplier,
+    import_suppliers_excel,
+    add_rate_card,
+    remove_rate_card,
+    import_rate_cards_excel,
 )
 
 app = Flask(__name__)
-CORS(app)  # allow the local HTML file to call the API
+CORS(app)
 
-# Load all DataFrames once at startup
 _dfs = load_all()
 
 
 def _reload_if_needed():
-    """Hot-reload data during development when ?reload=1 is passed."""
     if request.args.get("reload") == "1":
         global _dfs
         _dfs = load_all()
@@ -37,13 +42,12 @@ def _reload_if_needed():
 @app.get("/api/status")
 def status():
     _reload_if_needed()
-    summary = kpi_summary(_dfs)
     return jsonify({
-        "ok": True,
-        "message": "HomCenter Invoice API is running",
-        "version": "1.0.0-phase1",
+        "ok":          True,
+        "message":     "HomCenter Invoice API is running",
+        "version":     "3.0.0-phase3",
         "data_loaded": {k: len(v) for k, v in _dfs.items()},
-        "kpi": summary,
+        "kpi":         kpi_summary(_dfs),
     })
 
 
@@ -52,10 +56,10 @@ def status():
 @app.get("/api/invoices")
 def list_invoices():
     _reload_if_needed()
-    status_filter = request.args.get("status")
     inv_df = _dfs["invoices"].copy()
-    if status_filter:
-        inv_df = inv_df[inv_df["status"] == status_filter]
+    sf = request.args.get("status")
+    if sf:
+        inv_df = inv_df[inv_df["status"] == sf]
     return jsonify(df_to_records(inv_df))
 
 
@@ -74,12 +78,12 @@ def invoice_price_check(invoice_id: str):
     results = price_check(_dfs, invoice_id)
     if not results:
         return jsonify({"error": f"Invoice {invoice_id!r} not found"}), 404
-    discrepancies = [r for r in results if r["status"] == "discrepancy"]
+    discs = [r for r in results if r["status"] == "discrepancy"]
     return jsonify({
-        "invoice_id": invoice_id,
-        "lines": results,
-        "discrepancy_count": len(discrepancies),
-        "all_ok": len(discrepancies) == 0,
+        "invoice_id":        invoice_id,
+        "lines":             results,
+        "discrepancy_count": len(discs),
+        "all_ok":            len(discs) == 0,
     })
 
 
@@ -91,27 +95,56 @@ def list_suppliers():
     return jsonify(df_to_records(_dfs["suppliers"]))
 
 
+@app.post("/api/suppliers")
+def create_supplier():
+    data = request.get_json(force=True)
+    record, err = add_supplier(_dfs, data)
+    if err:
+        return jsonify({"error": err}), 400
+    return jsonify({"ok": True, "supplier": record}), 201
+
+
+@app.delete("/api/suppliers/<code>")
+def delete_supplier(code: str):
+    ok, err = remove_supplier(_dfs, code)
+    if not ok:
+        return jsonify({"error": err}), 400
+    return jsonify({"ok": True, "deleted": code})
+
+
+@app.post("/api/suppliers/import")
+def import_suppliers():
+    """
+    Multipart file upload: field name = 'file'
+    Accepts .xlsx / .xls / .csv
+    """
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded (field name: 'file')"}), 400
+    f = request.files["file"]
+    result = import_suppliers_excel(_dfs, f.read())
+    status_code = 200 if not result["errors"] else 207
+    return jsonify(result), status_code
+
+
 # ── IMP mapping ───────────────────────────────────────────────────────────────
 
 @app.get("/api/imp")
 def list_imp():
     _reload_if_needed()
-    category = request.args.get("category")
     imp_df = _dfs["imp_mapping"].copy()
-    if category:
-        imp_df = imp_df[imp_df["category"] == category]
+    cat = request.args.get("category")
+    if cat:
+        imp_df = imp_df[imp_df["category"] == cat]
     return jsonify(df_to_records(imp_df))
 
 
 @app.post("/api/imp/match")
 def imp_match():
-    """POST {"text": "..."} → best matching IMP rule"""
     body = request.get_json(force=True)
     text = body.get("text", "").strip()
     if not text:
         return jsonify({"error": "text is required"}), 400
-    result = match_imp(_dfs, text)
-    return jsonify({"text": text, "match": result})
+    return jsonify({"text": text, "match": match_imp(_dfs, text)})
 
 
 # ── rate cards ────────────────────────────────────────────────────────────────
@@ -119,17 +152,56 @@ def imp_match():
 @app.get("/api/rate-cards")
 def list_rate_cards():
     _reload_if_needed()
+    rc = _dfs["rate_cards"].copy()
     vendor = request.args.get("vendor")
     month  = request.args.get("month")
-    rc = _dfs["rate_cards"].copy()
     if vendor:
-        rc = rc[rc["vendor_code"] == vendor]
+        rc = rc[rc["vendor_code"] == vendor.upper()]
     if month:
         rc = rc[rc["month"] == month]
     return jsonify(df_to_records(rc))
 
 
-# ── KPI summary ───────────────────────────────────────────────────────────────
+@app.post("/api/rate-cards")
+def create_rate_card():
+    data = request.get_json(force=True)
+    record, err = add_rate_card(_dfs, data)
+    if err:
+        return jsonify({"error": err}), 400
+    return jsonify({"ok": True, "rate_card": record}), 201
+
+
+@app.delete("/api/rate-cards")
+def delete_rate_card():
+    """
+    Body: {"vendor_code": "DHL", "month": "2024-04", "imp_code": "IMP-002"}
+    """
+    data        = request.get_json(force=True)
+    vendor_code = data.get("vendor_code", "")
+    month       = data.get("month", "")
+    imp_code    = data.get("imp_code", "")
+    ok, err = remove_rate_card(_dfs, vendor_code, month, imp_code)
+    if not ok:
+        return jsonify({"error": err}), 400
+    return jsonify({"ok": True})
+
+
+@app.post("/api/rate-cards/import")
+def import_rate_cards():
+    """
+    Multipart: file = Excel/CSV, vendor_code = form field
+    """
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded (field name: 'file')"}), 400
+    vendor_code = request.form.get("vendor_code", "").strip().upper()
+    if not vendor_code:
+        return jsonify({"error": "vendor_code form field is required"}), 400
+    f      = request.files["file"]
+    result = import_rate_cards_excel(_dfs, f.read(), vendor_code)
+    return jsonify(result), 200 if not result["errors"] else 207
+
+
+# ── KPI ───────────────────────────────────────────────────────────────────────
 
 @app.get("/api/kpi")
 def kpi():
