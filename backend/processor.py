@@ -38,6 +38,7 @@ def load_all() -> dict[str, pd.DataFrame]:
         "suppliers":     _load("suppliers.csv"),
         "imp_mapping":   _load("imp_mapping.csv"),
         "rate_cards":    _load("rate_cards.csv"),
+        "audit_log":     _load("audit_log.csv"),
     }
 
 
@@ -342,6 +343,147 @@ def import_rate_cards_excel(dfs: dict, file_bytes: bytes, vendor_code: str) -> d
             imported += 1
 
     return {"imported": imported, "skipped": skipped, "errors": errors}
+
+
+# ── AUDIT LOG ────────────────────────────────────────────────────────────────
+
+def append_audit(dfs: dict, action: str, detail: str,
+                 status: str = "ok", user: str = "system") -> dict:
+    """Append one entry to the audit log and persist to CSV."""
+    from datetime import datetime
+    ts  = datetime.now().strftime("%Y-%m-%d %H:%M")
+    new = pd.DataFrame([{"ts": ts, "action": action,
+                          "detail": detail, "status": status, "user": user}])
+    dfs["audit_log"] = pd.concat([new, dfs["audit_log"]], ignore_index=True)
+    _save(dfs["audit_log"], "audit_log.csv")
+    return {"ts": ts, "action": action, "detail": detail,
+            "status": status, "user": user}
+
+
+def get_audit(dfs: dict, limit: int = 100,
+              action: str | None = None,
+              status: str | None = None) -> list[dict]:
+    df = dfs["audit_log"].copy()
+    if action:
+        df = df[df["action"] == action]
+    if status:
+        df = df[df["status"] == status]
+    df = df.head(limit)
+    return df.where(pd.notna(df), None).to_dict(orient="records")
+
+
+# ── M3 EXPORT ────────────────────────────────────────────────────────────────
+
+# M3 program and transaction used for AP invoice header + lines
+_M3_PROGRAM     = "APS450MI"
+_M3_TRANSACTION = "AddHead"
+_M3_LINE_TX     = "AddLine"
+
+# Default M3 company settings (overridden by env or settings endpoint)
+_M3_DEFAULTS = {
+    "CONO": "100",   # company
+    "DIVI": "HC",    # division
+    "VT01": "6",     # VAT code
+}
+
+
+def generate_m3_export(dfs: dict,
+                       invoice_ids: list[str] | None = None,
+                       cono: str = "100",
+                       divi: str = "HC",
+                       vat_code: str = "6") -> list[dict]:
+    """
+    Build APS450MI AddHead + AddLine commands for each ready invoice.
+    Returns a list of M3 command dicts.
+    """
+    inv_df = dfs["invoices"].copy()
+    if invoice_ids:
+        inv_df = inv_df[inv_df["invoice_id"].isin(invoice_ids)]
+
+    # Only export approved or discrepancy-that-was-acknowledged invoices
+    # (exclude 'pending' — not yet reviewed)
+    exportable = inv_df[inv_df["status"].isin(["approved", "discrepancy"])]
+
+    commands = []
+    for _, inv in exportable.iterrows():
+        inv_id  = str(inv["invoice_id"])
+        lines   = dfs["invoice_lines"][
+            dfs["invoice_lines"]["invoice_id"] == inv_id
+        ].copy()
+
+        # ── Header record ──────────────────────────────────────────────
+        total    = float(inv.get("total_amount", 0) or 0)
+        ils_amt  = total * CUSTOMS_RATE_USD_ILS if inv.get("currency") == "USD" else total
+        vat_amt  = float(inv.get("vat_amount", 0) or 0)
+
+        commands.append({
+            "program":     _M3_PROGRAM,
+            "transaction": _M3_TRANSACTION,
+            "record": {
+                "CONO": cono,
+                "DIVI": divi,
+                "SINO": inv_id.split("-")[-1],      # invoice number
+                "SUNO": _vendor_code(dfs["suppliers"], str(inv.get("vendor", ""))),
+                "IVDT": str(inv.get("date", "")).replace("/", ""),
+                "IVAM": round(ils_amt, 2),
+                "CUAM": round(total, 2),
+                "CUCD": str(inv.get("currency", "ILS")),
+                "VTAM": round(vat_amt, 2),
+                "VT01": vat_code,
+                "TX40": str(inv.get("vendor", "")),
+            },
+        })
+
+        # ── Line records ───────────────────────────────────────────────
+        for _, line in lines.iterrows():
+            billed  = float(line.get("billed_amount", 0) or 0)
+            ils_line = billed * CUSTOMS_RATE_USD_ILS if inv.get("currency") == "USD" else billed
+            commands.append({
+                "program":     _M3_PROGRAM,
+                "transaction": _M3_LINE_TX,
+                "record": {
+                    "CONO": cono,
+                    "DIVI": divi,
+                    "SINO": inv_id.split("-")[-1],
+                    "PONR": str(line.get("line_no", "")),
+                    "ITNO": str(line.get("imp_code", "")),
+                    "IVQA": 1,
+                    "LIMT": round(ils_line, 2),
+                    "CUAM": round(billed, 2),
+                    "TX40": str(line.get("desc_raw", "")),
+                },
+            })
+
+    return commands
+
+
+def m3_export_to_excel(commands: list[dict]) -> bytes:
+    """Flatten M3 commands into an Excel workbook and return bytes."""
+    rows = []
+    for cmd in commands:
+        row = {"program": cmd["program"], "transaction": cmd["transaction"]}
+        row.update(cmd["record"])
+        rows.append(row)
+
+    df  = pd.DataFrame(rows)
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="M3_Export")
+    return buf.getvalue()
+
+
+def mark_invoices_exported(dfs: dict, invoice_ids: list[str], user: str = "system") -> int:
+    """Set status → 'approved' and erp_status → 'נשלח ל-M3' for given invoices."""
+    mask = dfs["invoices"]["invoice_id"].isin(invoice_ids)
+    dfs["invoices"].loc[mask, "status"]     = "approved"
+    dfs["invoices"].loc[mask, "erp_status"] = "נשלח ל-M3"
+    _save(dfs["invoices"], "invoices.csv")
+    count = int(mask.sum())
+    if count:
+        append_audit(dfs, "M3_EXPORT",
+                     f"{count} חשבוניות נשלחו ל-M3: {', '.join(invoice_ids[:3])}{'...' if len(invoice_ids)>3 else ''}",
+                     "ok", user)
+    return count
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────

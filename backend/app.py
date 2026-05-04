@@ -9,6 +9,9 @@ import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+from flask import send_file
+import io
+
 from processor import (
     load_all,
     kpi_summary,
@@ -23,6 +26,12 @@ from processor import (
     add_rate_card,
     remove_rate_card,
     import_rate_cards_excel,
+    # Phase 4 — Audit + M3
+    append_audit,
+    get_audit,
+    generate_m3_export,
+    m3_export_to_excel,
+    mark_invoices_exported,
 )
 
 app = Flask(__name__)
@@ -207,6 +216,98 @@ def import_rate_cards():
 def kpi():
     _reload_if_needed()
     return jsonify(kpi_summary(_dfs))
+
+
+# ── AUDIT LOG (Phase 4) ───────────────────────────────────────────────────────
+
+@app.get("/api/audit")
+def list_audit():
+    _reload_if_needed()
+    limit  = int(request.args.get("limit", 100))
+    action = request.args.get("action")
+    status = request.args.get("status")
+    return jsonify(get_audit(_dfs, limit=limit, action=action, status=status))
+
+
+@app.post("/api/audit")
+def create_audit():
+    data   = request.get_json(force=True)
+    action = data.get("action", "").strip()
+    detail = data.get("detail", "").strip()
+    if not action or not detail:
+        return jsonify({"error": "action and detail are required"}), 400
+    entry = append_audit(
+        _dfs,
+        action=action,
+        detail=detail,
+        status=data.get("status", "ok"),
+        user=data.get("user", "frontend"),
+    )
+    return jsonify({"ok": True, "entry": entry}), 201
+
+
+# ── M3 EXPORT (Phase 4) ───────────────────────────────────────────────────────
+
+@app.get("/api/m3/export")
+def m3_export_json():
+    """
+    Returns M3 APS450MI commands as JSON.
+    Optional QS: invoice_ids=ID1,ID2  cono=100  divi=HC  vat=6
+    """
+    _reload_if_needed()
+    ids      = request.args.get("invoice_ids", "")
+    id_list  = [i.strip() for i in ids.split(",") if i.strip()] or None
+    cono     = request.args.get("cono", "100")
+    divi     = request.args.get("divi", "HC")
+    vat_code = request.args.get("vat", "6")
+
+    commands = generate_m3_export(_dfs, id_list, cono=cono, divi=divi, vat_code=vat_code)
+    invoices_included = list({c["record"].get("SUNO", "") for c in commands
+                               if c["transaction"] == "AddHead"})
+    return jsonify({
+        "program":          "APS450MI",
+        "command_count":    len(commands),
+        "invoices_included": invoices_included,
+        "commands":         commands,
+    })
+
+
+@app.get("/api/m3/export/excel")
+def m3_export_excel():
+    """Download M3 export as Excel file."""
+    _reload_if_needed()
+    ids     = request.args.get("invoice_ids", "")
+    id_list = [i.strip() for i in ids.split(",") if i.strip()] or None
+    commands = generate_m3_export(_dfs, id_list)
+    xlsx     = m3_export_to_excel(commands)
+    return send_file(
+        io.BytesIO(xlsx),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name="M3_APS450MI_Export.xlsx",
+    )
+
+
+@app.post("/api/m3/send")
+def m3_send():
+    """
+    Simulate sending invoices to M3.
+    Body: {"invoice_ids": ["ID1", "ID2"], "user": "dana.levi"}
+    Marks invoices as exported and appends audit entry.
+    """
+    data        = request.get_json(force=True)
+    invoice_ids = data.get("invoice_ids", [])
+    user        = data.get("user", "frontend")
+
+    if not invoice_ids:
+        return jsonify({"error": "invoice_ids list is required"}), 400
+
+    count = mark_invoices_exported(_dfs, invoice_ids, user=user)
+    return jsonify({
+        "ok":       True,
+        "exported": count,
+        "message":  f"{count} חשבוניות סומנו כ'נשלח ל-M3'",
+    })
 
 
 if __name__ == "__main__":

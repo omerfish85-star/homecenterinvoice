@@ -1,0 +1,11 @@
+ts,action,detail,status,user
+2025-09-29 09:10,IMPORT_IMP,6 כללי IMP הוכנסו,ok,system
+2025-09-29 09:15,ADD_SUPPLIER,ORSHAR נוסף למערכת,ok,system
+2025-09-29 10:40,IMP_MAPPING,חשבונית ORSHAR-558574 – 4 סעיפים מופו,ok,system
+2025-09-29 10:41,PRICE_CHECK,חשבונית ORSHAR-558574 – 4/4 שורות תקינות,ok,system
+2025-09-29 10:42,M3_EXPORT,חשבונית ORSHAR-558574 – 5 פקודות נשלחו ל-M3,ok,system
+2025-09-30 08:05,IMP_MAPPING,חשבונית DHL-7489201 – עצירה: Security Surcharge לא מוכר,warn,system
+2025-09-30 08:06,PRICE_CHECK,חשבונית DHL-7489201 – 2 חריגות מחיר זוהו,warn,system
+2025-09-30 09:00,APPROVE_LINE,DHL-7489201 שורה 2 אושרה ידנית,ok,dana.levi
+2025-09-30 11:00,PRICE_CHECK,חשבונית DHL-118543 – 1 חריגה: Handling Fee,warn,system
+2025-09-30 11:30,ADD_SUPPLIER,CARGO360 נוסף ע"י משתמש,ok,dana.levi

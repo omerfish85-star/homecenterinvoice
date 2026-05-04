@@ -240,9 +240,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
   <div class="sb-section">מערכת</div>
   <div class="sb-item" onclick="nav('settings',this)"><span class="icon">⚙️</span>הגדרות</div>
   <div class="sb-item" onclick="nav('audit',this)"><span class="icon">📜</span>יומן פעילות</div>
+  <div class="sb-item" onclick="nav('m3export',this)" id="nav-m3export">
+    <span class="icon">📤</span>ייצוא M3
+    <span id="sb-badge-m3" style="display:none;margin-right:auto;background:#7C3AED;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px"></span>
+  </div>
 
   <div class="sb-bottom">
-    <div style="font-size:11px;color:#64748B;padding:0 8px">גרסה 2.0 · Phase 2</div>
+    <div style="font-size:11px;color:#64748B;padding:0 8px">גרסה 4.0 · Phase 4</div>
   </div>
 </aside>
 
@@ -741,13 +745,96 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
     <!-- VIEW: AUDIT                                           -->
     <!-- ══════════════════════════════════════════════════════ -->
     <div class="view" id="view-audit">
-      <div class="section-lbl">יומן פעילות</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="section-lbl" style="margin-bottom:0">יומן פעילות</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="audit-action-filter" onchange="loadAuditFromAPI()" style="padding:5px 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px">
+            <option value="">כל הפעולות</option>
+            <option value="IMPORT_IMP">IMPORT_IMP</option>
+            <option value="ADD_SUPPLIER">ADD_SUPPLIER</option>
+            <option value="M3_EXPORT">M3_EXPORT</option>
+            <option value="PRICE_CHECK">PRICE_CHECK</option>
+            <option value="IMP_MAPPING">IMP_MAPPING</option>
+          </select>
+          <select id="audit-status-filter" onchange="loadAuditFromAPI()" style="padding:5px 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px">
+            <option value="">כל הסטטוסים</option>
+            <option value="ok">ok</option>
+            <option value="warn">warn</option>
+            <option value="error">error</option>
+          </select>
+          <button id="audit-sync-btn" class="btn btn-out btn-sm" onclick="loadAuditFromAPI(true)">↻ רענן</button>
+        </div>
+      </div>
       <p style="font-size:13px;color:var(--t2);margin-bottom:16px">תיעוד של כל פעולה שבוצעה במערכת.</p>
       <div class="card">
         <table class="tbl">
-          <thead><tr><th>זמן</th><th>פעולה</th><th>פרטים</th><th>סטטוס</th></tr></thead>
+          <thead><tr><th>זמן</th><th>פעולה</th><th>פרטים</th><th>סטטוס</th><th>משתמש</th></tr></thead>
           <tbody id="audit-tbody"></tbody>
         </table>
+        <div id="audit-footer" style="padding:8px 12px;font-size:11px;color:var(--gy);border-top:1px solid var(--bd)"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- VIEW: M3 EXPORT                                        -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="view" id="view-m3export">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="section-lbl" style="margin-bottom:0">ייצוא ל-Infor M3</div>
+        <button class="btn btn-out btn-sm" onclick="loadM3Export(true)">↻ רענן</button>
+      </div>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:16px">
+        בחר חשבוניות לשליחה ל-Infor M3 דרך APS450MI. המערכת תייצר פקודות AddHead + AddLine.
+      </p>
+
+      <!-- Invoice selector -->
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          <span>📋 בחר חשבוניות לייצוא</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-out btn-sm" onclick="m3SelectAll(true)">בחר הכל</button>
+            <button class="btn btn-out btn-sm" onclick="m3SelectAll(false)">נקה בחירה</button>
+          </div>
+        </div>
+        <div id="m3-inv-list" style="display:grid;gap:8px">
+          <div style="text-align:center;padding:20px;color:var(--gy);font-size:12px">טוען...</div>
+        </div>
+      </div>
+
+      <!-- Action bar -->
+      <div class="card" style="padding:16px 20px">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-or" onclick="m3PreviewCommands()" id="m3-preview-btn">
+            🔍 תצוגה מקדימה
+          </button>
+          <button class="btn btn-gr" onclick="m3SendToERP()" id="m3-send-btn" style="display:none">
+            <div class="spinner" id="m3-spin"></div>
+            <span id="m3-send-lbl">📤 שלח ל-M3</span>
+          </button>
+          <a id="m3-excel-link" href="#" onclick="m3DownloadExcel(event)" class="btn btn-out">⬇ הורד Excel</a>
+          <button class="btn btn-out" onclick="m3DownloadJSON()" id="m3-json-btn">⬇ הורד JSON</button>
+          <div id="m3-sel-count" style="font-size:12px;color:var(--gy);margin-right:auto">לא נבחרו חשבוניות</div>
+        </div>
+        <div id="m3-send-result" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Command preview -->
+      <div id="m3-preview-card" class="card hidden">
+        <div class="card-title" style="color:#7C3AED" id="m3-preview-title">📤 תצוגה מקדימה – פקודות APS450MI</div>
+        <div style="overflow-x:auto">
+          <table class="tbl" id="m3-cmd-table" style="font-size:12px">
+            <thead>
+              <tr>
+                <th>פקודה</th>
+                <th>חשבונית</th>
+                <th>שדה</th>
+                <th>ערך</th>
+              </tr>
+            </thead>
+            <tbody id="m3-cmd-tbody"></tbody>
+          </table>
+        </div>
+        <div class="json-box" id="m3-json-box" style="margin-top:14px;max-height:220px"></div>
       </div>
     </div>
 
@@ -797,6 +884,7 @@ const TITLES = {
   imp:      '🗂️ טבלת IMP',
   settings: '⚙️ הגדרות',
   audit:    '📜 יומן פעילות',
+  m3export: '📤 ייצוא ל-Infor M3',
 };
 
 function nav(id, el) {
@@ -814,7 +902,8 @@ function nav(id, el) {
   if (id==='suppliers') renderSuppliers();
   if (id==='prices')    { populateSupplierSelects(); populatePxSup(); renderPrices(); }
   if (id==='imp')       renderIMP();
-  if (id==='audit')     renderAudit();
+  if (id==='audit')     loadAuditFromAPI();
+  if (id==='m3export')  loadM3Export();
 }
 
 // ── SUPPLIERS ────────────────────────────────────────────────────────────────
@@ -1034,6 +1123,110 @@ function renderPrices() {
   : '<tr><td colspan="8" style="text-align:center;color:var(--gy);padding:20px">אין מחירים</td></tr>';
 }
 
+// ── PRICE EXCEL IMPORT ───────────────────────────────────────────────────────
+let pendingPriceRows = [];
+
+function populatePxSup() {
+  const el = document.getElementById('px-sup');
+  if (!el) return;
+  const prev = el.value;
+  el.innerHTML = state.suppliers.map(s => `<option value="${s.code}">${s.code} – ${s.name}</option>`).join('');
+  if (prev) el.value = prev;
+}
+
+function handlePriceExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('px-file-name').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb  = XLSX.read(e.target.result, {type:'array'});
+      const ws  = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if (!raw.length) { alert('הקובץ ריק.'); return; }
+      const normalize = s => String(s).trim().toLowerCase().replace(/\s+/g,'_');
+      const rows = raw.map(r => { const n={}; Object.keys(r).forEach(k=>n[normalize(k)]=r[k]); return n; });
+      const required = ['imp_code','unit_price','currency','valid_from'];
+      const cols = Object.keys(rows[0]);
+      const missing = required.filter(c=>!cols.includes(c));
+      if (missing.length) { alert(`חסרות עמודות: ${missing.join(', ')}`); return; }
+      pendingPriceRows = rows;
+      const previewCols = ['imp_code','unit_price','currency','valid_from','service_name'];
+      const tbl = document.getElementById('px-preview-table');
+      tbl.innerHTML =
+        '<thead><tr>'+previewCols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
+        '<tbody>'+rows.slice(0,8).map(r=>'<tr>'+previewCols.map(c=>`<td>${r[c]||''}</td>`).join('')+'</tr>').join('')+
+        (rows.length>8?`<tr><td colspan="${previewCols.length}" style="color:var(--gy);text-align:center">...ועוד ${rows.length-8}</td></tr>`:'')+
+        '</tbody>';
+      document.getElementById('px-count').textContent = rows.length;
+      document.getElementById('px-preview-wrap').classList.remove('hidden');
+      document.getElementById('px-result').textContent = '';
+    } catch(err) { alert('שגיאה: '+err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function importPriceExcel() {
+  if (!pendingPriceRows.length) return;
+  const vendorCode = document.getElementById('px-sup').value;
+  if (!vendorCode) { alert('בחר ספק'); return; }
+  let added=0, errors=[];
+  const formData = new FormData();
+  // Build blob from pending rows via SheetJS
+  const aoa = [['imp_code','unit_price','currency','valid_from','service_name']].concat(
+    pendingPriceRows.map(r=>[r.imp_code,r.unit_price,r.currency,r.valid_from,r.service_name||''])
+  );
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+  const xlsxBytes = XLSX.write(wb, {bookType:'xlsx',type:'array'});
+  formData.append('file', new Blob([xlsxBytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'rates.xlsx');
+  formData.append('vendor_code', vendorCode);
+  try {
+    const res  = await fetch(`${API_BASE}/rate-cards/import`, {method:'POST', body:formData, signal:AbortSignal.timeout(8000)});
+    const data = await res.json();
+    added = data.added || 0;
+    if (data.errors?.length) errors = data.errors;
+    // Also add to local state
+    pendingPriceRows.forEach(r => {
+      const impCode = String(r.imp_code).replace(/^IMP-?0*/i,'');
+      state.prices.push({sup:vendorCode, imp:parseInt(impCode)||r.imp_code, desc:r.service_name||r.imp_code, price:parseFloat(r.unit_price)||0, cur:r.currency, from:r.valid_from, to:''});
+    });
+    renderPrices();
+    logAction('IMPORT_PRICES', `${vendorCode}: ${added} מחירים יובאו`, 'ok');
+    document.getElementById('px-result').innerHTML = `<span style="color:var(--gr)">✅ יובאו ${added} מחירים</span>`+(errors.length?` <span style="color:var(--re)">${errors.join(' | ')}</span>`:'');
+    pendingPriceRows=[];
+    showToast(`✅ ${added} מחירים יובאו בהצלחה`);
+  } catch {
+    pendingPriceRows.forEach(r => {
+      const impCode = String(r.imp_code).replace(/^IMP-?0*/i,'');
+      state.prices.push({sup:vendorCode, imp:parseInt(impCode)||r.imp_code, desc:r.service_name||r.imp_code, price:parseFloat(r.unit_price)||0, cur:r.currency, from:r.valid_from, to:''});
+      added++;
+    });
+    renderPrices();
+    document.getElementById('px-result').innerHTML = `<span style="color:var(--or)">⚠ יובאו מקומית בלבד (${added} שורות)</span>`;
+    pendingPriceRows=[];
+  }
+}
+
+function clearPriceExcel() {
+  pendingPriceRows=[];
+  document.getElementById('px-preview-wrap').classList.add('hidden');
+  document.getElementById('px-input').value='';
+  document.getElementById('px-file-name').textContent='';
+}
+
+function downloadPriceTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['imp_code','unit_price','currency','valid_from','service_name','valid_to'],
+    ['IMP-002',1240,'USD','2024-04','הובלה אווירית',''],
+    ['IMP-003',15,'PCT','2024-04','היטל דלק',''],
+    ['IMP-004',80,'USD','2024-04','עמלת טיפול',''],
+  ]);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'RateCard');
+  XLSX.writeFile(wb,'RateCard_Template.xlsx');
+}
+
 // ── IMP ──────────────────────────────────────────────────────────────────────
 function addIMP() {
   const code = parseInt(document.getElementById('i-code').value);
@@ -1128,26 +1321,221 @@ function testEmail() {
 function logAction(action, detail, status) {
   const now = new Date();
   const ts = `${now.toLocaleDateString('he-IL')} ${now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}`;
-  state.audit.unshift({ts, action, detail, status});
+  state.audit.unshift({ts, action, detail, status, user:'frontend'});
+  // Also send to API (fire-and-forget)
+  fetch(`${API_BASE}/audit`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action, detail, status, user:'frontend'}),
+    signal: AbortSignal.timeout(3000),
+  }).catch(() => {});
 }
 
-function renderAudit() {
-  const ACTION_LABEL = {
-    EXPORT:'📤 ייצוא M3', VALIDATE:'✅ בקרת מחירים', IMP_MAPPING:'🗂️ מיפוי IMP',
-    ADD_SUPPLIER:'🏢 ספק נוסף', DELETE_SUPPLIER:'🗑️ ספק נמחק',
-    ADD_PRICE:'💰 מחיר נוסף', DELETE_PRICE:'🗑️ מחיר נמחק',
-    ADD_IMP_RULE:'➕ כלל IMP', DELETE_IMP_RULE:'🗑️ כלל IMP',
-    IMPORT_IMP:'📤 ייבוא IMP', EDIT_SETTINGS:'⚙️ הגדרות', TOGGLE_EMAIL:'📧 מייל',
-    TEST_EMAIL:'🔌 בדיקת מייל',
-  };
+const ACTION_LABEL = {
+  EXPORT:'📤 ייצוא M3', VALIDATE:'✅ בקרת מחירים', IMP_MAPPING:'🗂️ מיפוי IMP',
+  M3_EXPORT:'📤 ייצוא M3', PRICE_CHECK:'✅ בקרת מחירים',
+  ADD_SUPPLIER:'🏢 ספק נוסף', DELETE_SUPPLIER:'🗑️ ספק נמחק',
+  ADD_PRICE:'💰 מחיר נוסף', DELETE_PRICE:'🗑️ מחיר נמחק',
+  ADD_IMP_RULE:'➕ כלל IMP', DELETE_IMP_RULE:'🗑️ כלל IMP',
+  IMPORT_IMP:'📤 ייבוא IMP', EDIT_SETTINGS:'⚙️ הגדרות', TOGGLE_EMAIL:'📧 מייל',
+  TEST_EMAIL:'🔌 בדיקת מייל', APPROVE_LINE:'✓ אישור שורה',
+  APPROVE_MANUAL:'✓ אישור ידני',
+};
+
+function _renderAuditRows(rows) {
   const tb = document.getElementById('audit-tbody');
-  tb.innerHTML = state.audit.map(r=>`
-    <tr>
+  if (!tb) return;
+  tb.innerHTML = rows.map(r => {
+    const statusTag = r.status === 'ok'
+      ? '<span class="tag tag-gr">✓ הצליח</span>'
+      : r.status === 'warn'
+      ? '<span class="tag tag-or">⚠ אזהרה</span>'
+      : '<span class="tag tag-re">✗ נכשל</span>';
+    return `<tr>
       <td style="font-size:11px;color:var(--gy);white-space:nowrap">${r.ts}</td>
       <td>${ACTION_LABEL[r.action]||r.action}</td>
       <td style="font-size:12px;color:var(--t2)">${r.detail}</td>
-      <td>${r.status==='ok'?'<span class="tag tag-gr">✓ הצליח</span>':'<span class="tag tag-re">✗ נכשל</span>'}</td>
-    </tr>`).join('');
+      ${statusTag}
+      <td style="font-size:11px;color:var(--gy)">${r.user||'—'}</td>
+    </tr>`;
+  }).join('');
+  const footer = document.getElementById('audit-footer');
+  if (footer) footer.textContent = `${rows.length} רשומות`;
+}
+
+function renderAudit() {
+  _renderAuditRows(state.audit);
+}
+
+async function loadAuditFromAPI(force = false) {
+  const btn = document.getElementById('audit-sync-btn');
+  if (btn) { btn.textContent = '↻ טוען...'; btn.disabled = true; }
+  try {
+    const action = document.getElementById('audit-action-filter')?.value || '';
+    const status = document.getElementById('audit-status-filter')?.value || '';
+    let url = `${API_BASE}/audit?limit=100`;
+    if (action) url += `&action=${encodeURIComponent(action)}`;
+    if (status) url += `&status=${encodeURIComponent(status)}`;
+    const res  = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    const rows = await res.json();
+    _renderAuditRows(rows);
+  } catch {
+    _renderAuditRows(state.audit);
+  } finally {
+    if (btn) { btn.textContent = '↻ רענן'; btn.disabled = false; }
+  }
+}
+
+// ── M3 EXPORT (Phase 4) ──────────────────────────────────────────────────────
+let _m3Invoices = [];
+
+async function loadM3Export(force = false) {
+  if (_m3Invoices.length && !force) { _renderM3InvList(); return; }
+  try {
+    const res = await fetch(`${API_BASE}/invoices`, { signal: AbortSignal.timeout(5000) });
+    _m3Invoices = await res.json();
+  } catch {
+    _m3Invoices = _staticInvoices();
+  }
+  _renderM3InvList();
+  _updateM3SelCount();
+  document.getElementById('m3-preview-card')?.classList.add('hidden');
+  document.getElementById('m3-send-btn') && (document.getElementById('m3-send-btn').style.display='none');
+}
+
+function _renderM3InvList() {
+  const el = document.getElementById('m3-inv-list');
+  if (!el) return;
+  if (!_m3Invoices.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gy);font-size:12px">אין חשבוניות</div>';
+    return;
+  }
+  el.innerHTML = _m3Invoices.map(inv => {
+    const st  = STATUS_LABELS[inv.status] || {label: inv.status, cls:'tag-gy'};
+    const amt = parseFloat(inv.total_amount)||0;
+    const cur = inv.currency==='ILS'?'₪':'$';
+    const alreadyExported = inv.erp_status === 'exported' || inv.erp_status === 'נשלח ל-M3';
+    return `<label style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;cursor:pointer;background:#fff;transition:background .1s"
+              onmouseenter="this.style.background='#FFF7ED'" onmouseleave="this.style.background='#fff'">
+      <input type="checkbox" class="m3-inv-chk" value="${inv.invoice_id}"
+        ${alreadyExported?'disabled title="כבר יוצא ל-M3"':''} onchange="_updateM3SelCount()">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:monospace;font-size:12px;font-weight:700;color:var(--bl)">${inv.invoice_id}</span>
+          <span class="tag ${st.cls}" style="font-size:9px">${st.label}</span>
+          ${alreadyExported?'<span class="tag tag-gy" style="font-size:9px">✓ יוצא</span>':''}
+        </div>
+        <div style="font-size:11px;color:var(--gy);margin-top:2px">${inv.vendor} · ${inv.date||''} · ${cur}${amt.toLocaleString('he-IL',{minimumFractionDigits:2})}</div>
+      </div>
+    </label>`;
+  }).join('');
+}
+
+function _selectedM3Ids() {
+  return [...document.querySelectorAll('.m3-inv-chk:checked')].map(c => c.value);
+}
+
+function _updateM3SelCount() {
+  const ids = _selectedM3Ids();
+  const el  = document.getElementById('m3-sel-count');
+  if (el) el.textContent = ids.length ? `${ids.length} חשבוניות נבחרו` : 'לא נבחרו חשבוניות';
+  const sendBtn = document.getElementById('m3-send-btn');
+  if (sendBtn) sendBtn.style.display = ids.length ? 'inline-flex' : 'none';
+}
+
+function m3SelectAll(checked) {
+  document.querySelectorAll('.m3-inv-chk:not(:disabled)').forEach(c => { c.checked = checked; });
+  _updateM3SelCount();
+}
+
+async function m3PreviewCommands() {
+  const ids = _selectedM3Ids();
+  if (!ids.length) { showToast('⚠ בחר לפחות חשבונית אחת'); return; }
+  const card  = document.getElementById('m3-preview-card');
+  const tbody = document.getElementById('m3-cmd-tbody');
+  const jsonBox = document.getElementById('m3-json-box');
+  const title = document.getElementById('m3-preview-title');
+  card.classList.remove('hidden');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:14px;color:var(--gy)">טוען...</td></tr>';
+  jsonBox.textContent = '';
+  try {
+    const qs = ids.map(id => `invoice_ids=${encodeURIComponent(id)}`).join('&');
+    const res = await fetch(`${API_BASE}/m3/export?${qs}`, { signal: AbortSignal.timeout(8000) });
+    const data = await res.json();
+    const cmds = data.commands || [];
+    title.textContent = `📤 ${cmds.length} פקודות APS450MI — ${ids.length} חשבוניות`;
+    tbody.innerHTML = cmds.map(cmd => {
+      const rec = cmd.record || {};
+      return Object.entries(rec).slice(0, 4).map(([k,v], i) =>
+        `<tr><td style="font-size:11px;color:var(--gy)">${i===0?cmd.transaction:''}</td>
+         <td style="font-size:11px;color:var(--gy)">${i===0?(rec.SINO||rec.SUNO||''):''}</td>
+         <td style="font-family:monospace;font-size:11px">${k}</td>
+         <td style="font-family:monospace;font-size:11px;color:var(--bl)">${v}</td></tr>`
+      ).join('');
+    }).join('');
+    jsonBox.textContent = JSON.stringify(cmds.slice(0,3), null, 2) + (cmds.length>3?'\n\n// ...ועוד':'');
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="4" class="alert al-re" style="padding:10px">שגיאה בטעינת תצוגה מקדימה</td></tr>';
+  }
+}
+
+async function m3SendToERP() {
+  const ids = _selectedM3Ids();
+  if (!ids.length) { showToast('⚠ בחר לפחות חשבונית אחת'); return; }
+  if (!confirm(`שלח ${ids.length} חשבוניות ל-M3?\n\n${ids.join('\n')}`)) return;
+
+  const spin = document.getElementById('m3-spin');
+  const lbl  = document.getElementById('m3-send-lbl');
+  const btn  = document.getElementById('m3-send-btn');
+  spin.style.display = 'inline-block'; lbl.textContent = 'שולח...'; btn.disabled = true;
+
+  try {
+    const res  = await fetch(`${API_BASE}/m3/send`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ invoice_ids: ids, user: 'frontend' }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const data = await res.json();
+    const el   = document.getElementById('m3-send-result');
+    if (data.ok) {
+      el.innerHTML = `<div class="alert al-gr">✅ ${data.message}</div>`;
+      logAction('M3_EXPORT', `${ids.join(', ')} – ${data.exported} חשבוניות נשלחו`, 'ok');
+      // Uncheck sent invoices and reload list
+      document.querySelectorAll('.m3-inv-chk:checked').forEach(c => { c.checked=false; c.disabled=true; });
+      await loadM3Export(true);
+      _updateM3SelCount();
+      // Update dashboard badge
+      loadDashboard(true);
+    } else {
+      el.innerHTML = `<div class="alert al-re">⚠ ${data.error||'שגיאה לא ידועה'}</div>`;
+    }
+  } catch (err) {
+    document.getElementById('m3-send-result').innerHTML =
+      `<div class="alert al-re">⚠ שגיאת רשת: ${err.message}</div>`;
+  } finally {
+    spin.style.display = 'none'; lbl.textContent = '📤 שלח ל-M3'; btn.disabled = false;
+  }
+}
+
+function m3DownloadExcel(e) {
+  e.preventDefault();
+  const ids = _selectedM3Ids();
+  const qs  = ids.length ? '?' + ids.map(id=>`invoice_ids=${encodeURIComponent(id)}`).join('&') : '';
+  window.open(`${API_BASE}/m3/export/excel${qs}`, '_blank');
+}
+
+async function m3DownloadJSON() {
+  const ids = _selectedM3Ids();
+  const qs  = ids.length ? '?' + ids.map(id=>`invoice_ids=${encodeURIComponent(id)}`).join('&') : '';
+  try {
+    const res  = await fetch(`${API_BASE}/m3/export${qs}`, { signal: AbortSignal.timeout(8000) });
+    const data = await res.json();
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a'); a.href=url; a.download='M3_APS450MI_Export.json';
+    a.click(); URL.revokeObjectURL(url);
+  } catch { showToast('⚠ שגיאה בהורדת JSON'); }
 }
 
 // ── TOAST ────────────────────────────────────────────────────────────────────
@@ -1785,7 +2173,7 @@ renderSuppliers();
 populateSupplierSelects();
 renderIMP();
 renderPrices();
-renderAudit();
+renderAudit(); // render static data immediately; API load happens on nav
 pingAPI();
 loadDashboard(); // boot the dashboard immediately
 </script>
