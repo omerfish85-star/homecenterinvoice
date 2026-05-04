@@ -183,7 +183,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
 <div class="main">
   <div class="topbar">
     <div class="topbar-title" id="topbar-title">📊 פיילוט – עיבוד חשבונית</div>
-    <div class="topbar-badge">HomCenter · פיילוט</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div id="api-status-badge" style="display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:#F3F4F6;color:#6B7280;border:1px solid #E5E7EB;cursor:pointer" onclick="pingAPI()" title="לחץ לבדיקת חיבור ל-API">
+        <span id="api-dot" style="width:7px;height:7px;border-radius:50%;background:#D1D5DB;display:inline-block"></span>
+        <span id="api-label">API: בודק...</span>
+      </div>
+      <div class="topbar-badge">HomCenter · פיילוט</div>
+    </div>
   </div>
 
   <div class="content">
@@ -192,6 +198,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
     <!-- VIEW: PILOT                                           -->
     <!-- ══════════════════════════════════════════════════════ -->
     <div class="view active" id="view-pilot">
+
+      <!-- API connection banner -->
+      <div id="api-banner" style="display:none;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;border:1px solid transparent"></div>
+
       <div class="section-lbl">חשבונית לדוגמה</div>
       <p style="font-size:13px;color:var(--t2);margin-bottom:14px">חשבונית PDF שהגיעה מאורשר שילוח — המערכת מעבדת אוטומטית.</p>
 
@@ -1039,12 +1049,88 @@ function resetPipeline(){
   document.getElementById('rst-btn').classList.add('hidden');
 }
 
+// ── API BRIDGE ───────────────────────────────────────────────────────────────
+const API_BASE = 'http://localhost:5001/api';
+
+function setApiBadge(state, text) {
+  const dot   = document.getElementById('api-dot');
+  const label = document.getElementById('api-label');
+  const badge = document.getElementById('api-status-badge');
+  const colors = {
+    checking: { dot:'#D1D5DB', bg:'#F3F4F6', fg:'#6B7280', border:'#E5E7EB' },
+    ok:       { dot:'#16A34A', bg:'#F0FDF4', fg:'#15803D', border:'#BBF7D0' },
+    error:    { dot:'#DC2626', bg:'#FEF2F2', fg:'#DC2626', border:'#FECACA' },
+  };
+  const c = colors[state] || colors.checking;
+  dot.style.background   = c.dot;
+  badge.style.background = c.bg;
+  badge.style.color      = c.fg;
+  badge.style.borderColor = c.border;
+  label.textContent = text;
+}
+
+function showApiBanner(state, html) {
+  const banner = document.getElementById('api-banner');
+  const styles = {
+    ok:    { bg:'#F0FDF4', fg:'#15803D', border:'#BBF7D0' },
+    error: { bg:'#FEF2F2', fg:'#DC2626', border:'#FECACA' },
+    info:  { bg:'#EFF6FF', fg:'#1D4ED8', border:'#BFDBFE' },
+  };
+  const s = styles[state] || styles.info;
+  banner.style.display     = 'block';
+  banner.style.background  = s.bg;
+  banner.style.color       = s.fg;
+  banner.style.borderColor = s.border;
+  banner.innerHTML         = html;
+}
+
+async function pingAPI() {
+  setApiBadge('checking', 'API: בודק...');
+  try {
+    const res = await fetch(`${API_BASE}/status`, { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    setApiBadge('ok', '✓ API: מחובר');
+    const kpi = data.kpi || {};
+    showApiBanner('ok', `
+      <strong>✅ חיבור ל-API הצליח</strong> — ${data.message}
+      <span style="margin:0 12px;opacity:.4">|</span>
+      חשבוניות טעונות: <strong>${kpi.total_invoices ?? '?'}</strong>
+      &nbsp;·&nbsp; ממתינות: <strong>${kpi.pending ?? '?'}</strong>
+      &nbsp;·&nbsp; חריגות: <strong>${kpi.discrepancy ?? '?'}</strong>
+      &nbsp;·&nbsp; אושרו: <strong>${kpi.approved ?? '?'}</strong>
+      &nbsp;·&nbsp; שווי כולל: <strong>₪${(kpi.total_value_ils ?? 0).toLocaleString('he-IL', {maximumFractionDigits:0})}</strong>
+      <button onclick="document.getElementById('api-banner').style.display='none'"
+        style="float:left;background:none;border:none;cursor:pointer;font-size:14px;color:inherit;opacity:.6;line-height:1">✕</button>
+    `);
+
+    // Sync live supplier count into sidebar badge if available
+    if (data.data_loaded?.suppliers) {
+      logAction('API_PING', `נטענו ${data.data_loaded.suppliers} ספקים, ${data.data_loaded.invoices} חשבוניות`, 'ok');
+      renderAudit();
+    }
+  } catch (err) {
+    setApiBadge('error', '✗ API: לא זמין');
+    showApiBanner('error', `
+      <strong>⚠ שגיאת חיבור לשרת Python</strong>
+      <span style="margin:0 10px;opacity:.4">|</span>
+      הרץ: <code style="background:rgba(0,0,0,.07);padding:2px 6px;border-radius:4px">cd backend &amp;&amp; python app.py</code>
+      ואז רענן.
+      <span style="font-size:11px;opacity:.7;margin-right:8px">(${err.message})</span>
+      <button onclick="document.getElementById('api-banner').style.display='none'"
+        style="float:left;background:none;border:none;cursor:pointer;font-size:14px;color:inherit;opacity:.6;line-height:1">✕</button>
+    `);
+  }
+}
+
 // ── INIT ─────────────────────────────────────────────────────────────────────
 renderSuppliers();
 populateSupplierSelects();
 renderIMP();
 renderPrices();
 renderAudit();
+pingAPI();
 </script>
 </body>
 </html>

@@ -1,0 +1,19 @@
+vendor_code,month,imp_code,service_name,unit_price,currency,unit
+DHL,2024-03,IMP-002,הובלה אווירית,1240.00,USD,per shipment
+DHL,2024-03,IMP-003,היטל דלק,13.0,PCT,% מהבסיס
+DHL,2024-03,IMP-004,עמלת טיפול,80.00,USD,per shipment
+DHL,2024-04,IMP-002,הובלה אווירית,1240.00,USD,per shipment
+DHL,2024-04,IMP-003,היטל דלק,15.0,PCT,% מהבסיס
+DHL,2024-04,IMP-004,עמלת טיפול,80.00,USD,per shipment
+FRDN,2024-03,IMP-010,דמי שחרור,230.00,ILS,per B/L
+FRDN,2024-03,IMP-011,אגרת מחשב,42.00,ILS,per B/L
+FRDN,2024-03,IMP-012,דמי אחסנה,16.00,ILS,per day
+FRDN,2024-04,IMP-010,דמי שחרור,250.00,ILS,per B/L
+FRDN,2024-04,IMP-011,אגרת מחשב,45.00,ILS,per B/L
+FRDN,2024-04,IMP-012,דמי אחסנה,18.00,ILS,per day
+ORSHAR,2025-09,IMP-020,דמי מכס,89.00,ILS,per B/L
+ORSHAR,2025-09,IMP-030,עמילות,250.00,ILS,per shipment
+KLAL,2024-03,IMP-030,דמי סוכן,170.00,ILS,per shipment
+KLAL,2024-03,IMP-031,שחרור מסמכים,85.00,ILS,per set
+KLAL,2024-04,IMP-030,דמי סוכן,180.00,ILS,per shipment
+KLAL,2024-04,IMP-031,שחרור מסמכים,85.00,ILS,per set

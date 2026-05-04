@@ -1,0 +1,19 @@
+invoice_id,line_no,desc_raw,imp_code,match_confidence,agreed_price,billed_amount,ok,vat_exempt,note
+ORSHAR-558574,1,דמי מכס,IMP-020,99,89.00,89.00,true,true,
+ORSHAR-558574,2,מע"מ ייבוא,IMP-099,97,,43783.00,true,true,
+ORSHAR-558574,3,מיסוי נמל,IMP-023,96,195.41,195.41,true,true,
+ORSHAR-558574,4,עמילות,IMP-030,97,250.00,250.00,true,false,
+DHL-118543,1,Air Freight Charge,IMP-002,99,1240.00,1240.00,true,false,
+DHL-118543,2,Fuel Surcharge 15%,IMP-003,97,186.00,186.00,false,false,מחירון: 15% × 1240=$186 ✓ אך חודש מרץ היה 13%
+DHL-118543,3,Handling Fee,IMP-004,95,80.00,95.00,false,false,חויב $95 · מוסכם $80 · פער $15
+DHL-118543,4,VAT,IMP-099,99,,270.23,true,true,
+FRDN-0429-7,1,דמי שחרור מטען,IMP-010,99,250.00,250.00,true,false,
+FRDN-0429-7,2,אגרת מחשב מכס,IMP-011,98,45.00,45.00,true,false,
+FRDN-0429-7,3,מע"מ,IMP-099,99,,54.05,true,true,
+KN-4421,1,Ocean Freight FCL,IMP-001,99,5400.00,5400.00,true,false,
+KN-4421,2,BAF Adjustment,IMP-003,91,756.00,756.00,true,false,
+DHL-7489201,1,Air Freight,IMP-002,99,2100.00,2100.00,true,false,
+DHL-7489201,2,Fuel Surcharge,IMP-003,97,315.00,399.00,false,false,חויב $399 · מוסכם $315 · פער $84 (26.7%)
+DHL-7489201,3,Handling Charge,IMP-004,92,100.00,120.00,false,false,חויב $120 · מוסכם $100 · פער $20
+DHL-7489201,4,Security Surcharge,IMP-021,94,,45.00,,false,סעיף לא במחירון – נדרש אישור
+DHL-7489201,5,VAT,IMP-099,99,,467.61,true,true,
