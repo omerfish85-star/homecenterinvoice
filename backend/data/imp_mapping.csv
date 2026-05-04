@@ -1,0 +1,16 @@
+imp_code,desc_he,desc_en,imp_name,category,keyword_pattern,confidence
+IMP-001,הובלה ימית,Ocean Freight,הובלה ימית,שילוח,הובל.*ים|ocean freight|sea freight,99
+IMP-002,הובלה אווירית,Air Freight,הובלה אווירית,שילוח,הובל.*אווירי|air freight,99
+IMP-003,היטל דלק,Fuel Surcharge,היטל דלק,שילוח,היטל\s*דלק|fuel surcharge|baf,97
+IMP-004,עמלת טיפול,Handling Fee,עמלת טיפול,שילוח,עמל.*טיפול|handling,95
+IMP-005,ביטוח מטען,Cargo Insurance,ביטוח מטען,שילוח,ביטוח|insurance,98
+IMP-010,דמי שחרור,Release Fee,דמי שחרור מכס,עמילות,דמי\s*שחרור|release fee,99
+IMP-011,אגרת מחשב,System Fee,אגרת מחשב מכס,עמילות,אגרת\s*מחשב|system fee,98
+IMP-012,דמי אחסנה,Storage Fee,דמי אחסנה נמל,עמילות,אחסנ|storage,96
+IMP-013,בדיקת מכס,Customs Inspection,בדיקת מכס,עמילות,בדיקת\s*מכס|inspection,99
+IMP-020,מכס יבוא,Customs Duty,מכס יבוא,מכס,דמי\s*מכס|customs duty|מכס,99
+IMP-021,היטל אבטחה,Security Surcharge,היטל אבטחה,שילוח,היטל\s*אבטחה|security surcharge,94
+IMP-023,מיסוי נמל,Port Tax,אגרת נמל ומיסוי,עמילות,מיסוי\s*נמל|מיסי\s*נמל|port tax|port levy,96
+IMP-030,דמי סוכן עמילות,Agency Fee,דמי סוכן עמילות,עמילות,עמילות|agency fee,97
+IMP-031,שחרור מסמכים,Document Release,שחרור מסמכים,עמילות,שחרור\s*מסמכים|document release,95
+IMP-099,מע"מ,VAT,מע"מ,מס,מע["\']?מ|vat,99

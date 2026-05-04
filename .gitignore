@@ -1,0 +1,7 @@
+backend/__pycache__/
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+dist/
+.render-buildpacks.json

@@ -1,0 +1,6 @@
+invoice_id,vendor,awb,date,month,currency,po,vessel,port_of_loading,container,total_amount,vat_amount,status,erp_status
+ORSHAR-558574,אורשר שילוח בין לאומי בע"מ,MEDU-440413-2,29/09/2025,2025-09,ILS,PO-5001958,MSC KALINA,NINGBO,MEDUJYS48987,44362.41,45.00,discrepancy,ממתין לאישור
+DHL-118543,DHL,1234567890,29/04/2024,2024-04,USD,PO-2024-0891,,,, 1781.23,270.23,pending,ממתין
+FRDN-0429-7,פרידנזון,IL20240429-7,28/04/2024,2024-04,ILS,PO-2024-0860,,,, 349.05,54.05,approved,נרשם ב-M3
+KN-4421,Kuehne+Nagel,KN20240428FCL,28/04/2024,2024-04,USD,PO-2024-0845,,,, 6156.00,0.00,pending,בתהליך
+DHL-7489201,DHL,7489201034,29/04/2024,2024-04,USD,PO-2024-0874,,,, 2731.61,467.61,discrepancy,ממתין

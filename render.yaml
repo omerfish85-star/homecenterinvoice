@@ -1,0 +1,23 @@
+# Render.com deployment manifest
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: homecenter-invoice
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true     # Render auto-generates a secure random value
+      - key: DATA_DIR
+        value: /var/data        # mapped to the persistent disk below
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+
+    # Persistent disk keeps CSV files alive across deploys/restarts
+    disk:
+      name: homecenter-data
+      mountPath: /var/data
+      sizeGB: 1                 # free tier allows up to 1 GB

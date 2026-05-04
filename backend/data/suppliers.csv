@@ -1,0 +1,6 @@
+code,name,currencies,email_patterns,type
+ORSHAR,"אורשר שילוח בין לאומי בע""מ",ILS,@orshar.co.il|orshar,builtin
+DHL,DHL Express / Freight,ILS|USD,@dhl.com|dhl-israel,builtin
+FRDN,פרידנזון,ILS,@frdn.co.il|frdn|friedenson,builtin
+KN,Kuehne+Nagel,USD,@kuehne-nagel.com|kn-il,builtin
+KLAL,כלל עמילות,ILS,@klal-customs.co.il|klal,builtin

@@ -151,6 +151,65 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
 .tog.on::after{left:18px}
 .tog-lbl{font-size:13px;font-weight:600}
 .tog-sub{font-size:11px;color:var(--gy);margin-right:auto}
+
+/* ── KPI CARDS (Phase 2) ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi-card{background:#fff;border-radius:var(--ra);border:1px solid var(--bd);
+  padding:18px 20px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;right:0;width:4px;
+  height:100%;border-radius:0 var(--ra) var(--ra) 0}
+.kpi-card.kpi-or::before{background:var(--or)}
+.kpi-card.kpi-re::before{background:var(--re)}
+.kpi-card.kpi-gr::before{background:var(--gr)}
+.kpi-card.kpi-bl::before{background:var(--bl)}
+.kpi-val{font-size:32px;font-weight:800;line-height:1;margin-bottom:4px}
+.kpi-lbl{font-size:11px;color:var(--gy);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.kpi-sub{font-size:11px;color:var(--gy);margin-top:6px}
+.kpi-loading .kpi-val{background:#E5E7EB;color:transparent;border-radius:4px;animation:shimmer 1.2s infinite}
+
+/* ── SHIMMER ── */
+@keyframes shimmer{0%,100%{opacity:.5}50%{opacity:1}}
+@keyframes fade-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fade-in{animation:fade-in .25s ease}
+
+/* ── STATUS DOTS ── */
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot-or{background:var(--or)}.dot-re{background:var(--re)}
+.dot-gr{background:var(--gr)}.dot-gy{background:#D1D5DB}
+
+/* ── PIPELINE VIEW ── */
+.pipeline-layout{display:flex;height:calc(100vh - 108px);overflow:hidden;margin:-24px}
+.pipeline-list{width:280px;border-left:1px solid var(--bd);overflow-y:auto;flex-shrink:0;background:#fff}
+.pipeline-list-header{padding:14px 16px;border-bottom:1px solid var(--bd);
+  font-size:12px;font-weight:700;color:var(--gy);text-transform:uppercase;letter-spacing:.5px;
+  background:#FAFAFA;position:sticky;top:0;z-index:1}
+.pl-item{padding:12px 16px;border-bottom:1px solid var(--bd);cursor:pointer;transition:background .1s}
+.pl-item:hover{background:#FFF7ED}
+.pl-item.selected{background:var(--orl);border-right:3px solid var(--or)}
+.pl-item-id{font-size:12px;font-weight:700;color:var(--bl);font-family:monospace}
+.pl-item-vendor{font-size:11px;color:var(--gy);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pipeline-detail{flex:1;overflow-y:auto;padding:24px;background:#F9FAFB}
+
+/* ── PRICE CHECK TABLE ── */
+.pc-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.pc-table th{text-align:right;padding:8px 12px;font-size:10px;font-weight:700;
+  color:var(--gy);border-bottom:2px solid var(--bd);background:#FAFAFA}
+.pc-table td{padding:10px 12px;border-bottom:1px solid var(--bd);vertical-align:middle}
+.pc-table tr:last-child td{border-bottom:none}
+.pc-row-ok td{background:#F0FDF488}
+.pc-row-disc td{background:#FEF2F288}
+.pc-row-unk td{background:#FFF7ED88}
+.variance-pill{display:inline-flex;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700}
+.vp-ok{background:#DCFCE7;color:#15803D}
+.vp-disc{background:#FEE2E2;color:var(--re)}
+.vp-unk{background:#FEF3C7;color:#92400E}
+
+/* ── BAR CHART ── */
+.bar-chart{display:flex;align-items:flex-end;gap:10px;height:90px;margin-top:8px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bar-fill{width:100%;border-radius:3px 3px 0 0;min-height:4px;transition:height .4s}
+.bar-label{font-size:9px;color:var(--gy)}
+.bar-val{font-size:9px;font-weight:700;color:var(--t2)}
 </style>
 </head>
 <body>
@@ -163,9 +222,17 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
   </div>
 
   <div class="sb-section">ראשי</div>
-  <div class="sb-item active" onclick="nav('pilot',this)"><span class="icon">📊</span>פיילוט – עיבוד חשבונית</div>
+  <div class="sb-item active" onclick="nav('dashboard',this)" id="nav-dashboard">
+    <span class="icon">▣</span>לוח בקרה
+    <span id="sb-badge-disc" style="display:none;margin-right:auto;background:#DC2626;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px"></span>
+  </div>
+  <div class="sb-item" onclick="nav('pipeline',this)" id="nav-pipeline">
+    <span class="icon">⟳</span>Pipeline
+    <span id="sb-badge-pipe" style="display:none;margin-right:auto;background:#F97316;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px"></span>
+  </div>
+  <div class="sb-item" onclick="nav('pilot',this)"><span class="icon">📊</span>פיילוט – דוגמה</div>
 
-  <div class="sb-section">ניהול ידני</div>
+  <div class="sb-section">ניהול</div>
   <div class="sb-item" onclick="nav('suppliers',this)"><span class="icon">🏢</span>ספקים</div>
   <div class="sb-item" onclick="nav('prices',this)"><span class="icon">💰</span>מחירונים</div>
   <div class="sb-item" onclick="nav('imp',this)"><span class="icon">🗂️</span>טבלת IMP</div>
@@ -173,9 +240,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
   <div class="sb-section">מערכת</div>
   <div class="sb-item" onclick="nav('settings',this)"><span class="icon">⚙️</span>הגדרות</div>
   <div class="sb-item" onclick="nav('audit',this)"><span class="icon">📜</span>יומן פעילות</div>
+  <div class="sb-item" onclick="nav('m3export',this)" id="nav-m3export">
+    <span class="icon">📤</span>ייצוא M3
+    <span id="sb-badge-m3" style="display:none;margin-right:auto;background:#7C3AED;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px"></span>
+  </div>
 
   <div class="sb-bottom">
-    <div style="font-size:11px;color:#64748B;padding:0 8px">גרסה 1.0 · פיילוט 2025</div>
+    <div style="font-size:11px;color:#64748B;padding:0 8px">גרסה 4.0 · Phase 4</div>
   </div>
 </aside>
 
@@ -183,15 +254,133 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
 <div class="main">
   <div class="topbar">
     <div class="topbar-title" id="topbar-title">📊 פיילוט – עיבוד חשבונית</div>
-    <div class="topbar-badge">HomCenter · פיילוט</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div id="api-status-badge" style="display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:#F3F4F6;color:#6B7280;border:1px solid #E5E7EB;cursor:pointer" onclick="pingAPI()" title="לחץ לבדיקת חיבור ל-API">
+        <span id="api-dot" style="width:7px;height:7px;border-radius:50%;background:#D1D5DB;display:inline-block"></span>
+        <span id="api-label">API: בודק...</span>
+      </div>
+      <div class="topbar-badge">HomCenter · פיילוט</div>
+    </div>
   </div>
 
   <div class="content">
 
     <!-- ══════════════════════════════════════════════════════ -->
+    <!-- VIEW: DASHBOARD (Phase 2)                            -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="view active fade-in" id="view-dashboard">
+
+      <!-- KPI cards -->
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi-card kpi-or kpi-loading">
+          <div class="kpi-lbl">סה"כ חשבוניות</div>
+          <div class="kpi-val" id="kpi-total">–</div>
+          <div class="kpi-sub" id="kpi-total-sub">טוען...</div>
+        </div>
+        <div class="kpi-card kpi-re kpi-loading">
+          <div class="kpi-lbl">ממתינות לטיפול</div>
+          <div class="kpi-val" id="kpi-pending">–</div>
+          <div class="kpi-sub" id="kpi-pending-sub">טוען...</div>
+        </div>
+        <div class="kpi-card kpi-gr kpi-loading">
+          <div class="kpi-lbl">אושרו</div>
+          <div class="kpi-val" id="kpi-approved">–</div>
+          <div class="kpi-sub" id="kpi-approved-sub">טוען...</div>
+        </div>
+        <div class="kpi-card kpi-bl kpi-loading">
+          <div class="kpi-lbl">שווי כולל ₪</div>
+          <div class="kpi-val" id="kpi-value">–</div>
+          <div class="kpi-sub" id="kpi-value-sub">טוען...</div>
+        </div>
+      </div>
+
+      <!-- Discrepancy chart + breakdown -->
+      <div class="g2" style="margin-bottom:20px">
+
+        <!-- Mini bar chart -->
+        <div class="card">
+          <div class="card-title">📊 חלוקת סטטוסים</div>
+          <div id="status-chart" class="bar-chart"></div>
+          <div id="status-legend" style="margin-top:10px;display:flex;gap:14px;flex-wrap:wrap;font-size:11px"></div>
+        </div>
+
+        <!-- Discrepancy breakdown -->
+        <div class="card">
+          <div class="card-title">⚠️ שורות חריגות לפי ספק</div>
+          <div id="disc-breakdown" style="font-size:12px;color:var(--gy)">טוען...</div>
+        </div>
+      </div>
+
+      <!-- Invoice table -->
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          <span>📋 כל החשבוניות</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-out btn-sm" id="filter-all"    onclick="filterDashboard('')"    style="border-color:var(--or);color:var(--or)">הכל</button>
+            <button class="btn btn-out btn-sm" id="filter-pending"   onclick="filterDashboard('pending')">ממתין</button>
+            <button class="btn btn-out btn-sm" id="filter-disc"    onclick="filterDashboard('discrepancy')">חריגה</button>
+            <button class="btn btn-out btn-sm" id="filter-ok"     onclick="filterDashboard('approved')">אושר</button>
+            <button class="btn btn-out btn-sm" onclick="loadDashboard(true)" title="רענן">↻</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="tbl" id="dash-inv-table">
+            <thead>
+              <tr>
+                <th>מזהה חשבונית</th>
+                <th>ספק</th>
+                <th>תאריך</th>
+                <th>מטבע</th>
+                <th style="text-align:left">סכום</th>
+                <th style="text-align:left">שווי ₪</th>
+                <th>חריגות</th>
+                <th>סטטוס ERP</th>
+                <th>סטטוס</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="dash-inv-tbody">
+              <tr><td colspan="10" style="text-align:center;padding:24px;color:var(--gy)">טוען נתונים...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="dash-footer" style="padding:10px 12px;font-size:11px;color:var(--gy);border-top:1px solid var(--bd)"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- VIEW: PIPELINE (Phase 2)                             -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="view fade-in" id="view-pipeline">
+      <div class="pipeline-layout">
+
+        <!-- Invoice list sidebar -->
+        <div class="pipeline-list">
+          <div class="pipeline-list-header">חשבוניות בעיבוד</div>
+          <div id="pipeline-inv-list">
+            <div style="padding:20px;text-align:center;color:var(--gy);font-size:12px">טוען...</div>
+          </div>
+        </div>
+
+        <!-- Detail panel -->
+        <div class="pipeline-detail" id="pipeline-detail-panel">
+          <div style="text-align:center;padding:60px 0;color:var(--gy)">
+            <div style="font-size:32px;margin-bottom:12px">⟳</div>
+            <div style="font-size:14px">בחר חשבונית מהרשימה לצפייה בפרטים</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
     <!-- VIEW: PILOT                                           -->
     <!-- ══════════════════════════════════════════════════════ -->
     <div class="view active" id="view-pilot">
+
+      <!-- API connection banner -->
+      <div id="api-banner" style="display:none;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;border:1px solid transparent"></div>
+
       <div class="section-lbl">חשבונית לדוגמה</div>
       <p style="font-size:13px;color:var(--t2);margin-bottom:14px">חשבונית PDF שהגיעה מאורשר שילוח — המערכת מעבדת אוטומטית.</p>
 
@@ -298,7 +487,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
     <!-- VIEW: SUPPLIERS                                       -->
     <!-- ══════════════════════════════════════════════════════ -->
     <div class="view" id="view-suppliers">
-      <div class="section-lbl">ניהול ספקים</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="section-lbl" style="margin-bottom:0">ניהול ספקים</div>
+        <button id="sup-sync-btn" class="btn btn-out btn-sm" onclick="syncSuppliersFromAPI()">↻ סנכרן עם API</button>
+      </div>
       <p style="font-size:13px;color:var(--t2);margin-bottom:16px">כל ספק שמוסף כאן יוכל לקבל מחירון ולהיות מזוהה אוטומטית ממייל.</p>
 
       <div class="card">
@@ -366,7 +558,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
     <!-- VIEW: PRICES                                          -->
     <!-- ══════════════════════════════════════════════════════ -->
     <div class="view" id="view-prices">
-      <div class="section-lbl">ניהול מחירונים</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="section-lbl" style="margin-bottom:0">ניהול מחירונים</div>
+        <button id="price-sync-btn" class="btn btn-out btn-sm" onclick="syncPricesFromAPI()">↻ סנכרן עם API</button>
+      </div>
       <p style="font-size:13px;color:var(--t2);margin-bottom:16px">הגדר מחיר מוסכם לכל קוד IMP לכל ספק. המערכת תשווה כל חשבונית למחירון.</p>
 
       <div class="card">
@@ -550,13 +745,96 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
     <!-- VIEW: AUDIT                                           -->
     <!-- ══════════════════════════════════════════════════════ -->
     <div class="view" id="view-audit">
-      <div class="section-lbl">יומן פעילות</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="section-lbl" style="margin-bottom:0">יומן פעילות</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="audit-action-filter" onchange="loadAuditFromAPI()" style="padding:5px 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px">
+            <option value="">כל הפעולות</option>
+            <option value="IMPORT_IMP">IMPORT_IMP</option>
+            <option value="ADD_SUPPLIER">ADD_SUPPLIER</option>
+            <option value="M3_EXPORT">M3_EXPORT</option>
+            <option value="PRICE_CHECK">PRICE_CHECK</option>
+            <option value="IMP_MAPPING">IMP_MAPPING</option>
+          </select>
+          <select id="audit-status-filter" onchange="loadAuditFromAPI()" style="padding:5px 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px">
+            <option value="">כל הסטטוסים</option>
+            <option value="ok">ok</option>
+            <option value="warn">warn</option>
+            <option value="error">error</option>
+          </select>
+          <button id="audit-sync-btn" class="btn btn-out btn-sm" onclick="loadAuditFromAPI(true)">↻ רענן</button>
+        </div>
+      </div>
       <p style="font-size:13px;color:var(--t2);margin-bottom:16px">תיעוד של כל פעולה שבוצעה במערכת.</p>
       <div class="card">
         <table class="tbl">
-          <thead><tr><th>זמן</th><th>פעולה</th><th>פרטים</th><th>סטטוס</th></tr></thead>
+          <thead><tr><th>זמן</th><th>פעולה</th><th>פרטים</th><th>סטטוס</th><th>משתמש</th></tr></thead>
           <tbody id="audit-tbody"></tbody>
         </table>
+        <div id="audit-footer" style="padding:8px 12px;font-size:11px;color:var(--gy);border-top:1px solid var(--bd)"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- VIEW: M3 EXPORT                                        -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="view" id="view-m3export">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="section-lbl" style="margin-bottom:0">ייצוא ל-Infor M3</div>
+        <button class="btn btn-out btn-sm" onclick="loadM3Export(true)">↻ רענן</button>
+      </div>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:16px">
+        בחר חשבוניות לשליחה ל-Infor M3 דרך APS450MI. המערכת תייצר פקודות AddHead + AddLine.
+      </p>
+
+      <!-- Invoice selector -->
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          <span>📋 בחר חשבוניות לייצוא</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-out btn-sm" onclick="m3SelectAll(true)">בחר הכל</button>
+            <button class="btn btn-out btn-sm" onclick="m3SelectAll(false)">נקה בחירה</button>
+          </div>
+        </div>
+        <div id="m3-inv-list" style="display:grid;gap:8px">
+          <div style="text-align:center;padding:20px;color:var(--gy);font-size:12px">טוען...</div>
+        </div>
+      </div>
+
+      <!-- Action bar -->
+      <div class="card" style="padding:16px 20px">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-or" onclick="m3PreviewCommands()" id="m3-preview-btn">
+            🔍 תצוגה מקדימה
+          </button>
+          <button class="btn btn-gr" onclick="m3SendToERP()" id="m3-send-btn" style="display:none">
+            <div class="spinner" id="m3-spin"></div>
+            <span id="m3-send-lbl">📤 שלח ל-M3</span>
+          </button>
+          <a id="m3-excel-link" href="#" onclick="m3DownloadExcel(event)" class="btn btn-out">⬇ הורד Excel</a>
+          <button class="btn btn-out" onclick="m3DownloadJSON()" id="m3-json-btn">⬇ הורד JSON</button>
+          <div id="m3-sel-count" style="font-size:12px;color:var(--gy);margin-right:auto">לא נבחרו חשבוניות</div>
+        </div>
+        <div id="m3-send-result" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Command preview -->
+      <div id="m3-preview-card" class="card hidden">
+        <div class="card-title" style="color:#7C3AED" id="m3-preview-title">📤 תצוגה מקדימה – פקודות APS450MI</div>
+        <div style="overflow-x:auto">
+          <table class="tbl" id="m3-cmd-table" style="font-size:12px">
+            <thead>
+              <tr>
+                <th>פקודה</th>
+                <th>חשבונית</th>
+                <th>שדה</th>
+                <th>ערך</th>
+              </tr>
+            </thead>
+            <tbody id="m3-cmd-tbody"></tbody>
+          </table>
+        </div>
+        <div class="json-box" id="m3-json-box" style="margin-top:14px;max-height:220px"></div>
       </div>
     </div>
 
@@ -598,27 +876,62 @@ const state = {
 
 // ── NAV ──────────────────────────────────────────────────────────────────────
 const TITLES = {
-  pilot:'📊 פיילוט – עיבוד חשבונית',
+  dashboard:'▣ לוח בקרה',
+  pipeline: '⟳ Pipeline – עיבוד חשבוניות',
+  pilot:    '📊 פיילוט – עיבוד חשבונית (דוגמה)',
   suppliers:'🏢 ניהול ספקים',
-  prices:'💰 ניהול מחירונים',
-  imp:'🗂️ טבלת IMP',
-  settings:'⚙️ הגדרות',
-  audit:'📜 יומן פעילות'
+  prices:   '💰 ניהול מחירונים',
+  imp:      '🗂️ טבלת IMP',
+  settings: '⚙️ הגדרות',
+  audit:    '📜 יומן פעילות',
+  m3export: '📤 ייצוא ל-Infor M3',
 };
 
 function nav(id, el) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
-  document.getElementById('view-'+id).classList.add('active');
+  const view = document.getElementById('view-'+id);
+  if (!view) return;
+  view.classList.add('active');
+  void view.offsetWidth; // trigger reflow for fade-in
+  view.classList.add('fade-in');
   if (el) el.classList.add('active');
   document.getElementById('topbar-title').textContent = TITLES[id] || id;
+  if (id==='dashboard') loadDashboard();
+  if (id==='pipeline')  loadPipeline();
   if (id==='suppliers') renderSuppliers();
   if (id==='prices')    { populateSupplierSelects(); populatePxSup(); renderPrices(); }
   if (id==='imp')       renderIMP();
-  if (id==='audit')     renderAudit();
+  if (id==='audit')     loadAuditFromAPI();
+  if (id==='m3export')  loadM3Export();
 }
 
 // ── SUPPLIERS ────────────────────────────────────────────────────────────────
+// ── SUPPLIER API SYNC ─────────────────────────────────────────────────────────
+async function syncSuppliersFromAPI() {
+  const btn = document.getElementById('sup-sync-btn');
+  if (btn) { btn.textContent = '↻ סורק...'; btn.disabled = true; }
+  try {
+    const res  = await fetch(`${API_BASE}/suppliers`, { signal: AbortSignal.timeout(5000) });
+    const rows = await res.json();
+    // Normalise API rows to local state shape
+    state.suppliers = rows.map(r => ({
+      code:       r.code,
+      name:       r.name,
+      currencies: r.currencies ? String(r.currencies).split('|') : ['ILS'],
+      patterns:   r.email_patterns || '',
+      type:       r.type || 'custom',
+    }));
+    renderSuppliers();
+    populateSupplierSelects();
+    showToast(`✅ ${rows.length} ספקים נטענו מה-API`);
+  } catch {
+    showToast('⚠ לא ניתן לטעון ספקים מה-API');
+  } finally {
+    if (btn) { btn.textContent = '↻ סנכרן עם API'; btn.disabled = false; }
+  }
+}
+
 function addSupplier() {
   const code = document.getElementById('s-code').value.trim().toUpperCase();
   const name = document.getElementById('s-name').value.trim();
@@ -629,6 +942,8 @@ function addSupplier() {
   if (!ils && !usd) { alert('יש לבחור לפחות מטבע אחד.'); return; }
   const currencies = [...(ils?['ILS']:[]), ...(usd?['USD']:[])];
   const pats = document.getElementById('s-patterns').value.trim();
+
+  // Optimistic local update
   state.suppliers.push({code, name, currencies, patterns:pats, type:'custom'});
   logAction('ADD_SUPPLIER', `${code} – ${name} (${currencies.join('+')})`, 'ok');
   ['s-code','s-name','s-patterns'].forEach(id => document.getElementById(id).value='');
@@ -636,6 +951,22 @@ function addSupplier() {
   document.getElementById('s-cur-usd').checked=false;
   renderSuppliers();
   populateSupplierSelects();
+
+  // Async API sync
+  fetch(`${API_BASE}/suppliers`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      code, name,
+      currencies: currencies.join('|'),
+      email_patterns: pats,
+      type: 'custom',
+    }),
+    signal: AbortSignal.timeout(5000),
+  }).then(r => r.json()).then(d => {
+    if (d.error) showToast(`⚠ API: ${d.error}`);
+    else showToast(`✅ ספק ${code} נשמר ב-API`);
+  }).catch(() => showToast('⚠ ספק נוסף מקומית בלבד (API לא זמין)'));
 }
 
 function removeSupplier(code) {
@@ -644,6 +975,13 @@ function removeSupplier(code) {
   state.prices    = state.prices.filter(p => p.sup!==code);
   logAction('DELETE_SUPPLIER', code, 'ok');
   renderSuppliers();
+
+  fetch(`${API_BASE}/suppliers/${encodeURIComponent(code)}`, {
+    method: 'DELETE', signal: AbortSignal.timeout(5000),
+  }).then(r => r.json()).then(d => {
+    if (d.error) showToast(`⚠ API: ${d.error}`);
+    else showToast(`🗑 ספק ${code} נמחק מה-API`);
+  }).catch(() => showToast('⚠ נמחק מקומית בלבד (API לא זמין)'));
 }
 
 function renderSuppliers() {
@@ -652,7 +990,7 @@ function renderSuppliers() {
     <tr>
       <td><strong>${s.code}</strong></td>
       <td>${s.name}</td>
-      <td>${(s.currencies||[s.currency]).map(c=>`<span class="tag tag-bl" style="margin-left:3px">${c}</span>`).join('')}</td>
+      <td>${(s.currencies||[s.currency||'ILS']).map(c=>`<span class="tag tag-bl" style="margin-left:3px">${c}</span>`).join('')}</td>
       <td style="font-size:11px;color:var(--gy)">${s.patterns||'—'}</td>
       <td>${s.type==='builtin'?'<span class="tag tag-gy">מובנה</span>':'<span class="tag tag-or">מותאם</span>'}</td>
       <td>${s.type==='custom'?`<button class="btn btn-re btn-sm" onclick="removeSupplier('${s.code}')">מחק</button>`:'—'}</td>
@@ -679,6 +1017,32 @@ function updateImpOpts() {
     `<option value="${r.id}">${r.code} – ${r.desc}</option>`).join('');
 }
 
+// ── RATE CARDS API SYNC ───────────────────────────────────────────────────────
+async function syncPricesFromAPI() {
+  const btn = document.getElementById('price-sync-btn');
+  if (btn) { btn.textContent = '↻ סורק...'; btn.disabled = true; }
+  try {
+    const res  = await fetch(`${API_BASE}/rate-cards`, { signal: AbortSignal.timeout(5000) });
+    const rows = await res.json();
+    // Map API rate_cards format → local prices format
+    state.prices = rows.map(r => ({
+      sup:  r.vendor_code,
+      imp:  r.imp_code,
+      desc: r.service_name || r.imp_code,
+      price: parseFloat(r.unit_price) || 0,
+      cur:  r.currency,
+      from: r.month,
+      to:   '',
+    }));
+    renderPrices();
+    showToast(`✅ ${rows.length} מחירים נטענו מה-API`);
+  } catch {
+    showToast('⚠ לא ניתן לטעון מחירים מה-API');
+  } finally {
+    if (btn) { btn.textContent = '↻ סנכרן עם API'; btn.disabled = false; }
+  }
+}
+
 function addPrice() {
   const supCode = document.getElementById('p-sup').value;
   const impId   = parseInt(document.getElementById('p-imp').value);
@@ -691,18 +1055,54 @@ function addPrice() {
   }
   if (!/^\d{4}-\d{2}$/.test(from)) { alert('פורמט תאריך: YYYY-MM'); return; }
   const to = document.getElementById('p-to').value.trim();
+
+  // Map IMP code number → IMP-0XX string expected by API
+  const impCodeStr = `IMP-${String(impRow.code).padStart(3,'0')}`;
+
+  // Optimistic local update
   state.prices.push({sup:supCode, imp:impRow.code, desc:impRow.desc, price, cur, from, to});
   logAction('ADD_PRICE', `${supCode} / IMP ${impRow.code} – ${price} ${cur}`, 'ok');
   document.getElementById('p-price').value='';
   document.getElementById('p-from').value='';
   document.getElementById('p-to').value='';
   renderPrices();
+
+  // Async API sync
+  fetch(`${API_BASE}/rate-cards`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      vendor_code:  supCode,
+      month:        from,
+      imp_code:     impCodeStr,
+      service_name: impRow.desc,
+      unit_price:   price,
+      currency:     cur,
+      unit:         '',
+    }),
+    signal: AbortSignal.timeout(5000),
+  }).then(r => r.json()).then(d => {
+    if (d.error) showToast(`⚠ API: ${d.error}`);
+    else showToast(`✅ מחיר ${supCode}/${impCodeStr} נשמר ב-API`);
+  }).catch(() => showToast('⚠ מחיר נוסף מקומית בלבד (API לא זמין)'));
 }
 
 function removePrice(idx) {
+  const p = state.prices[idx];
   state.prices.splice(idx, 1);
-  logAction('DELETE_PRICE', `שורה ${idx+1}`, 'ok');
+  logAction('DELETE_PRICE', `${p.sup} / IMP ${p.imp}`, 'ok');
   renderPrices();
+
+  const impCodeStr = `IMP-${String(p.imp).padStart(3,'0')}`;
+  fetch(`${API_BASE}/rate-cards`, {
+    method: 'DELETE',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ vendor_code: p.sup, month: p.from, imp_code: impCodeStr }),
+    signal: AbortSignal.timeout(5000),
+  }).then(r => r.json()).then(d => {
+    if (d.error) showToast(`⚠ API: ${d.error}`);
+    else showToast(`🗑 מחיר נמחק מה-API`);
+  }).catch(() => showToast('⚠ נמחק מקומית בלבד (API לא זמין)'));
 }
 
 function renderPrices() {
@@ -721,6 +1121,110 @@ function renderPrices() {
       <td><button class="btn btn-re btn-sm" onclick="removePrice(${state.prices.indexOf(p)})">מחק</button></td>
     </tr>`).join('')
   : '<tr><td colspan="8" style="text-align:center;color:var(--gy);padding:20px">אין מחירים</td></tr>';
+}
+
+// ── PRICE EXCEL IMPORT ───────────────────────────────────────────────────────
+let pendingPriceRows = [];
+
+function populatePxSup() {
+  const el = document.getElementById('px-sup');
+  if (!el) return;
+  const prev = el.value;
+  el.innerHTML = state.suppliers.map(s => `<option value="${s.code}">${s.code} – ${s.name}</option>`).join('');
+  if (prev) el.value = prev;
+}
+
+function handlePriceExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('px-file-name').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb  = XLSX.read(e.target.result, {type:'array'});
+      const ws  = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if (!raw.length) { alert('הקובץ ריק.'); return; }
+      const normalize = s => String(s).trim().toLowerCase().replace(/\s+/g,'_');
+      const rows = raw.map(r => { const n={}; Object.keys(r).forEach(k=>n[normalize(k)]=r[k]); return n; });
+      const required = ['imp_code','unit_price','currency','valid_from'];
+      const cols = Object.keys(rows[0]);
+      const missing = required.filter(c=>!cols.includes(c));
+      if (missing.length) { alert(`חסרות עמודות: ${missing.join(', ')}`); return; }
+      pendingPriceRows = rows;
+      const previewCols = ['imp_code','unit_price','currency','valid_from','service_name'];
+      const tbl = document.getElementById('px-preview-table');
+      tbl.innerHTML =
+        '<thead><tr>'+previewCols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
+        '<tbody>'+rows.slice(0,8).map(r=>'<tr>'+previewCols.map(c=>`<td>${r[c]||''}</td>`).join('')+'</tr>').join('')+
+        (rows.length>8?`<tr><td colspan="${previewCols.length}" style="color:var(--gy);text-align:center">...ועוד ${rows.length-8}</td></tr>`:'')+
+        '</tbody>';
+      document.getElementById('px-count').textContent = rows.length;
+      document.getElementById('px-preview-wrap').classList.remove('hidden');
+      document.getElementById('px-result').textContent = '';
+    } catch(err) { alert('שגיאה: '+err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function importPriceExcel() {
+  if (!pendingPriceRows.length) return;
+  const vendorCode = document.getElementById('px-sup').value;
+  if (!vendorCode) { alert('בחר ספק'); return; }
+  let added=0, errors=[];
+  const formData = new FormData();
+  // Build blob from pending rows via SheetJS
+  const aoa = [['imp_code','unit_price','currency','valid_from','service_name']].concat(
+    pendingPriceRows.map(r=>[r.imp_code,r.unit_price,r.currency,r.valid_from,r.service_name||''])
+  );
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+  const xlsxBytes = XLSX.write(wb, {bookType:'xlsx',type:'array'});
+  formData.append('file', new Blob([xlsxBytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'rates.xlsx');
+  formData.append('vendor_code', vendorCode);
+  try {
+    const res  = await fetch(`${API_BASE}/rate-cards/import`, {method:'POST', body:formData, signal:AbortSignal.timeout(8000)});
+    const data = await res.json();
+    added = data.added || 0;
+    if (data.errors?.length) errors = data.errors;
+    // Also add to local state
+    pendingPriceRows.forEach(r => {
+      const impCode = String(r.imp_code).replace(/^IMP-?0*/i,'');
+      state.prices.push({sup:vendorCode, imp:parseInt(impCode)||r.imp_code, desc:r.service_name||r.imp_code, price:parseFloat(r.unit_price)||0, cur:r.currency, from:r.valid_from, to:''});
+    });
+    renderPrices();
+    logAction('IMPORT_PRICES', `${vendorCode}: ${added} מחירים יובאו`, 'ok');
+    document.getElementById('px-result').innerHTML = `<span style="color:var(--gr)">✅ יובאו ${added} מחירים</span>`+(errors.length?` <span style="color:var(--re)">${errors.join(' | ')}</span>`:'');
+    pendingPriceRows=[];
+    showToast(`✅ ${added} מחירים יובאו בהצלחה`);
+  } catch {
+    pendingPriceRows.forEach(r => {
+      const impCode = String(r.imp_code).replace(/^IMP-?0*/i,'');
+      state.prices.push({sup:vendorCode, imp:parseInt(impCode)||r.imp_code, desc:r.service_name||r.imp_code, price:parseFloat(r.unit_price)||0, cur:r.currency, from:r.valid_from, to:''});
+      added++;
+    });
+    renderPrices();
+    document.getElementById('px-result').innerHTML = `<span style="color:var(--or)">⚠ יובאו מקומית בלבד (${added} שורות)</span>`;
+    pendingPriceRows=[];
+  }
+}
+
+function clearPriceExcel() {
+  pendingPriceRows=[];
+  document.getElementById('px-preview-wrap').classList.add('hidden');
+  document.getElementById('px-input').value='';
+  document.getElementById('px-file-name').textContent='';
+}
+
+function downloadPriceTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['imp_code','unit_price','currency','valid_from','service_name','valid_to'],
+    ['IMP-002',1240,'USD','2024-04','הובלה אווירית',''],
+    ['IMP-003',15,'PCT','2024-04','היטל דלק',''],
+    ['IMP-004',80,'USD','2024-04','עמלת טיפול',''],
+  ]);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'RateCard');
+  XLSX.writeFile(wb,'RateCard_Template.xlsx');
 }
 
 // ── IMP ──────────────────────────────────────────────────────────────────────
@@ -817,26 +1321,221 @@ function testEmail() {
 function logAction(action, detail, status) {
   const now = new Date();
   const ts = `${now.toLocaleDateString('he-IL')} ${now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}`;
-  state.audit.unshift({ts, action, detail, status});
+  state.audit.unshift({ts, action, detail, status, user:'frontend'});
+  // Also send to API (fire-and-forget)
+  fetch(`${API_BASE}/audit`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action, detail, status, user:'frontend'}),
+    signal: AbortSignal.timeout(3000),
+  }).catch(() => {});
 }
 
-function renderAudit() {
-  const ACTION_LABEL = {
-    EXPORT:'📤 ייצוא M3', VALIDATE:'✅ בקרת מחירים', IMP_MAPPING:'🗂️ מיפוי IMP',
-    ADD_SUPPLIER:'🏢 ספק נוסף', DELETE_SUPPLIER:'🗑️ ספק נמחק',
-    ADD_PRICE:'💰 מחיר נוסף', DELETE_PRICE:'🗑️ מחיר נמחק',
-    ADD_IMP_RULE:'➕ כלל IMP', DELETE_IMP_RULE:'🗑️ כלל IMP',
-    IMPORT_IMP:'📤 ייבוא IMP', EDIT_SETTINGS:'⚙️ הגדרות', TOGGLE_EMAIL:'📧 מייל',
-    TEST_EMAIL:'🔌 בדיקת מייל',
-  };
+const ACTION_LABEL = {
+  EXPORT:'📤 ייצוא M3', VALIDATE:'✅ בקרת מחירים', IMP_MAPPING:'🗂️ מיפוי IMP',
+  M3_EXPORT:'📤 ייצוא M3', PRICE_CHECK:'✅ בקרת מחירים',
+  ADD_SUPPLIER:'🏢 ספק נוסף', DELETE_SUPPLIER:'🗑️ ספק נמחק',
+  ADD_PRICE:'💰 מחיר נוסף', DELETE_PRICE:'🗑️ מחיר נמחק',
+  ADD_IMP_RULE:'➕ כלל IMP', DELETE_IMP_RULE:'🗑️ כלל IMP',
+  IMPORT_IMP:'📤 ייבוא IMP', EDIT_SETTINGS:'⚙️ הגדרות', TOGGLE_EMAIL:'📧 מייל',
+  TEST_EMAIL:'🔌 בדיקת מייל', APPROVE_LINE:'✓ אישור שורה',
+  APPROVE_MANUAL:'✓ אישור ידני',
+};
+
+function _renderAuditRows(rows) {
   const tb = document.getElementById('audit-tbody');
-  tb.innerHTML = state.audit.map(r=>`
-    <tr>
+  if (!tb) return;
+  tb.innerHTML = rows.map(r => {
+    const statusTag = r.status === 'ok'
+      ? '<span class="tag tag-gr">✓ הצליח</span>'
+      : r.status === 'warn'
+      ? '<span class="tag tag-or">⚠ אזהרה</span>'
+      : '<span class="tag tag-re">✗ נכשל</span>';
+    return `<tr>
       <td style="font-size:11px;color:var(--gy);white-space:nowrap">${r.ts}</td>
       <td>${ACTION_LABEL[r.action]||r.action}</td>
       <td style="font-size:12px;color:var(--t2)">${r.detail}</td>
-      <td>${r.status==='ok'?'<span class="tag tag-gr">✓ הצליח</span>':'<span class="tag tag-re">✗ נכשל</span>'}</td>
-    </tr>`).join('');
+      ${statusTag}
+      <td style="font-size:11px;color:var(--gy)">${r.user||'—'}</td>
+    </tr>`;
+  }).join('');
+  const footer = document.getElementById('audit-footer');
+  if (footer) footer.textContent = `${rows.length} רשומות`;
+}
+
+function renderAudit() {
+  _renderAuditRows(state.audit);
+}
+
+async function loadAuditFromAPI(force = false) {
+  const btn = document.getElementById('audit-sync-btn');
+  if (btn) { btn.textContent = '↻ טוען...'; btn.disabled = true; }
+  try {
+    const action = document.getElementById('audit-action-filter')?.value || '';
+    const status = document.getElementById('audit-status-filter')?.value || '';
+    let url = `${API_BASE}/audit?limit=100`;
+    if (action) url += `&action=${encodeURIComponent(action)}`;
+    if (status) url += `&status=${encodeURIComponent(status)}`;
+    const res  = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    const rows = await res.json();
+    _renderAuditRows(rows);
+  } catch {
+    _renderAuditRows(state.audit);
+  } finally {
+    if (btn) { btn.textContent = '↻ רענן'; btn.disabled = false; }
+  }
+}
+
+// ── M3 EXPORT (Phase 4) ──────────────────────────────────────────────────────
+let _m3Invoices = [];
+
+async function loadM3Export(force = false) {
+  if (_m3Invoices.length && !force) { _renderM3InvList(); return; }
+  try {
+    const res = await fetch(`${API_BASE}/invoices`, { signal: AbortSignal.timeout(5000) });
+    _m3Invoices = await res.json();
+  } catch {
+    _m3Invoices = _staticInvoices();
+  }
+  _renderM3InvList();
+  _updateM3SelCount();
+  document.getElementById('m3-preview-card')?.classList.add('hidden');
+  document.getElementById('m3-send-btn') && (document.getElementById('m3-send-btn').style.display='none');
+}
+
+function _renderM3InvList() {
+  const el = document.getElementById('m3-inv-list');
+  if (!el) return;
+  if (!_m3Invoices.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gy);font-size:12px">אין חשבוניות</div>';
+    return;
+  }
+  el.innerHTML = _m3Invoices.map(inv => {
+    const st  = STATUS_LABELS[inv.status] || {label: inv.status, cls:'tag-gy'};
+    const amt = parseFloat(inv.total_amount)||0;
+    const cur = inv.currency==='ILS'?'₪':'$';
+    const alreadyExported = inv.erp_status === 'exported' || inv.erp_status === 'נשלח ל-M3';
+    return `<label style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;cursor:pointer;background:#fff;transition:background .1s"
+              onmouseenter="this.style.background='#FFF7ED'" onmouseleave="this.style.background='#fff'">
+      <input type="checkbox" class="m3-inv-chk" value="${inv.invoice_id}"
+        ${alreadyExported?'disabled title="כבר יוצא ל-M3"':''} onchange="_updateM3SelCount()">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:monospace;font-size:12px;font-weight:700;color:var(--bl)">${inv.invoice_id}</span>
+          <span class="tag ${st.cls}" style="font-size:9px">${st.label}</span>
+          ${alreadyExported?'<span class="tag tag-gy" style="font-size:9px">✓ יוצא</span>':''}
+        </div>
+        <div style="font-size:11px;color:var(--gy);margin-top:2px">${inv.vendor} · ${inv.date||''} · ${cur}${amt.toLocaleString('he-IL',{minimumFractionDigits:2})}</div>
+      </div>
+    </label>`;
+  }).join('');
+}
+
+function _selectedM3Ids() {
+  return [...document.querySelectorAll('.m3-inv-chk:checked')].map(c => c.value);
+}
+
+function _updateM3SelCount() {
+  const ids = _selectedM3Ids();
+  const el  = document.getElementById('m3-sel-count');
+  if (el) el.textContent = ids.length ? `${ids.length} חשבוניות נבחרו` : 'לא נבחרו חשבוניות';
+  const sendBtn = document.getElementById('m3-send-btn');
+  if (sendBtn) sendBtn.style.display = ids.length ? 'inline-flex' : 'none';
+}
+
+function m3SelectAll(checked) {
+  document.querySelectorAll('.m3-inv-chk:not(:disabled)').forEach(c => { c.checked = checked; });
+  _updateM3SelCount();
+}
+
+async function m3PreviewCommands() {
+  const ids = _selectedM3Ids();
+  if (!ids.length) { showToast('⚠ בחר לפחות חשבונית אחת'); return; }
+  const card  = document.getElementById('m3-preview-card');
+  const tbody = document.getElementById('m3-cmd-tbody');
+  const jsonBox = document.getElementById('m3-json-box');
+  const title = document.getElementById('m3-preview-title');
+  card.classList.remove('hidden');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:14px;color:var(--gy)">טוען...</td></tr>';
+  jsonBox.textContent = '';
+  try {
+    const qs = ids.map(id => `invoice_ids=${encodeURIComponent(id)}`).join('&');
+    const res = await fetch(`${API_BASE}/m3/export?${qs}`, { signal: AbortSignal.timeout(8000) });
+    const data = await res.json();
+    const cmds = data.commands || [];
+    title.textContent = `📤 ${cmds.length} פקודות APS450MI — ${ids.length} חשבוניות`;
+    tbody.innerHTML = cmds.map(cmd => {
+      const rec = cmd.record || {};
+      return Object.entries(rec).slice(0, 4).map(([k,v], i) =>
+        `<tr><td style="font-size:11px;color:var(--gy)">${i===0?cmd.transaction:''}</td>
+         <td style="font-size:11px;color:var(--gy)">${i===0?(rec.SINO||rec.SUNO||''):''}</td>
+         <td style="font-family:monospace;font-size:11px">${k}</td>
+         <td style="font-family:monospace;font-size:11px;color:var(--bl)">${v}</td></tr>`
+      ).join('');
+    }).join('');
+    jsonBox.textContent = JSON.stringify(cmds.slice(0,3), null, 2) + (cmds.length>3?'\n\n// ...ועוד':'');
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="4" class="alert al-re" style="padding:10px">שגיאה בטעינת תצוגה מקדימה</td></tr>';
+  }
+}
+
+async function m3SendToERP() {
+  const ids = _selectedM3Ids();
+  if (!ids.length) { showToast('⚠ בחר לפחות חשבונית אחת'); return; }
+  if (!confirm(`שלח ${ids.length} חשבוניות ל-M3?\n\n${ids.join('\n')}`)) return;
+
+  const spin = document.getElementById('m3-spin');
+  const lbl  = document.getElementById('m3-send-lbl');
+  const btn  = document.getElementById('m3-send-btn');
+  spin.style.display = 'inline-block'; lbl.textContent = 'שולח...'; btn.disabled = true;
+
+  try {
+    const res  = await fetch(`${API_BASE}/m3/send`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ invoice_ids: ids, user: 'frontend' }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const data = await res.json();
+    const el   = document.getElementById('m3-send-result');
+    if (data.ok) {
+      el.innerHTML = `<div class="alert al-gr">✅ ${data.message}</div>`;
+      logAction('M3_EXPORT', `${ids.join(', ')} – ${data.exported} חשבוניות נשלחו`, 'ok');
+      // Uncheck sent invoices and reload list
+      document.querySelectorAll('.m3-inv-chk:checked').forEach(c => { c.checked=false; c.disabled=true; });
+      await loadM3Export(true);
+      _updateM3SelCount();
+      // Update dashboard badge
+      loadDashboard(true);
+    } else {
+      el.innerHTML = `<div class="alert al-re">⚠ ${data.error||'שגיאה לא ידועה'}</div>`;
+    }
+  } catch (err) {
+    document.getElementById('m3-send-result').innerHTML =
+      `<div class="alert al-re">⚠ שגיאת רשת: ${err.message}</div>`;
+  } finally {
+    spin.style.display = 'none'; lbl.textContent = '📤 שלח ל-M3'; btn.disabled = false;
+  }
+}
+
+function m3DownloadExcel(e) {
+  e.preventDefault();
+  const ids = _selectedM3Ids();
+  const qs  = ids.length ? '?' + ids.map(id=>`invoice_ids=${encodeURIComponent(id)}`).join('&') : '';
+  window.open(`${API_BASE}/m3/export/excel${qs}`, '_blank');
+}
+
+async function m3DownloadJSON() {
+  const ids = _selectedM3Ids();
+  const qs  = ids.length ? '?' + ids.map(id=>`invoice_ids=${encodeURIComponent(id)}`).join('&') : '';
+  try {
+    const res  = await fetch(`${API_BASE}/m3/export${qs}`, { signal: AbortSignal.timeout(8000) });
+    const data = await res.json();
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a'); a.href=url; a.download='M3_APS450MI_Export.json';
+    a.click(); URL.revokeObjectURL(url);
+  } catch { showToast('⚠ שגיאה בהורדת JSON'); }
 }
 
 // ── TOAST ────────────────────────────────────────────────────────────────────
@@ -1039,12 +1738,448 @@ function resetPipeline(){
   document.getElementById('rst-btn').classList.add('hidden');
 }
 
+// ── DASHBOARD (Phase 2) ──────────────────────────────────────────────────────
+const CUSTOMS_RATE = 3.70;
+let _dashInvoices = [];   // cache from API
+let _dashFilter   = '';
+
+async function loadDashboard(force = false) {
+  if (_dashInvoices.length && !force) { renderDashboard(); return; }
+  try {
+    const [invRes, kpiRes] = await Promise.all([
+      fetch(`${API_BASE}/invoices`, { signal: AbortSignal.timeout(5000) }),
+      fetch(`${API_BASE}/kpi`,      { signal: AbortSignal.timeout(5000) }),
+    ]);
+    _dashInvoices = await invRes.json();
+    const kpi     = await kpiRes.json();
+    renderKPIs(kpi);
+    renderDashboard();
+    renderStatusChart(kpi);
+    renderDiscBreakdown();
+    updateSidebarBadges(kpi);
+  } catch {
+    // Fallback: use static state data shaped like API response
+    _dashInvoices = _staticInvoices();
+    renderKPIs(_staticKPI());
+    renderDashboard();
+    renderStatusChart(_staticKPI());
+    renderDiscBreakdown();
+  }
+}
+
+function _staticInvoices() {
+  return [
+    {invoice_id:'ORSHAR-558574', vendor:'אורשר שילוח', date:'29/09/2025', month:'2025-09', currency:'ILS', total_amount:44362.41, status:'discrepancy', erp_status:'ממתין'},
+    {invoice_id:'DHL-118543',    vendor:'DHL',         date:'29/04/2024', month:'2024-04', currency:'USD', total_amount:1781.23,  status:'pending',     erp_status:'ממתין'},
+    {invoice_id:'FRDN-0429-7',   vendor:'פרידנזון',   date:'28/04/2024', month:'2024-04', currency:'ILS', total_amount:349.05,   status:'approved',    erp_status:'נרשם ב-M3'},
+    {invoice_id:'KN-4421',       vendor:'Kuehne+Nagel',date:'28/04/2024', month:'2024-04', currency:'USD', total_amount:6156.00,  status:'pending',     erp_status:'בתהליך'},
+    {invoice_id:'DHL-7489201',   vendor:'DHL',         date:'29/04/2024', month:'2024-04', currency:'USD', total_amount:2731.61,  status:'discrepancy', erp_status:'ממתין'},
+  ];
+}
+function _staticKPI() {
+  return {total_invoices:5, pending:2, approved:1, discrepancy:2, total_value_ils:84186, discrepancy_lines:4};
+}
+
+function renderKPIs(kpi) {
+  const cards = document.querySelectorAll('.kpi-card');
+  cards.forEach(c => c.classList.remove('kpi-loading'));
+
+  document.getElementById('kpi-total').textContent    = kpi.total_invoices;
+  document.getElementById('kpi-total-sub').textContent = `${kpi.discrepancy} חריגות · ${kpi.pending} ממתינות`;
+
+  document.getElementById('kpi-pending').textContent    = kpi.pending;
+  document.getElementById('kpi-pending-sub').textContent = 'חשבוניות ממתינות לטיפול';
+
+  document.getElementById('kpi-approved').textContent    = kpi.approved;
+  document.getElementById('kpi-approved-sub').textContent = 'מוכן להזנה ל-M3';
+
+  const ils = (kpi.total_value_ils||0).toLocaleString('he-IL', {maximumFractionDigits:0});
+  document.getElementById('kpi-value').textContent    = `₪${ils}`;
+  document.getElementById('kpi-value-sub').textContent = `${kpi.discrepancy_lines || 0} שורות חריגות`;
+}
+
+function renderStatusChart(kpi) {
+  const data = [
+    {label:'אושר',   val:kpi.approved,    color:'var(--gr)'},
+    {label:'ממתין',  val:kpi.pending,     color:'var(--or)'},
+    {label:'חריגה',  val:kpi.discrepancy, color:'var(--re)'},
+  ];
+  const max = Math.max(...data.map(d => d.val), 1);
+  const chart = document.getElementById('status-chart');
+  chart.innerHTML = data.map(d => `
+    <div class="bar-col">
+      <div class="bar-val">${d.val}</div>
+      <div class="bar-fill" style="height:${Math.round((d.val/max)*70)+8}px;background:${d.color}"></div>
+      <div class="bar-label">${d.label}</div>
+    </div>
+  `).join('');
+
+  const legend = document.getElementById('status-legend');
+  legend.innerHTML = data.map(d =>
+    `<span style="display:flex;align-items:center;gap:5px">
+      <span style="width:8px;height:8px;border-radius:2px;background:${d.color};display:inline-block"></span>
+      ${d.label}: <strong>${d.val}</strong>
+    </span>`
+  ).join('');
+}
+
+function renderDiscBreakdown() {
+  const el = document.getElementById('disc-breakdown');
+  const byVendor = {};
+  _dashInvoices.forEach(inv => {
+    if (inv.status === 'discrepancy') {
+      byVendor[inv.vendor] = (byVendor[inv.vendor] || 0) + 1;
+    }
+  });
+  if (!Object.keys(byVendor).length) {
+    el.innerHTML = '<div class="alert al-gr" style="margin:0">✅ אין חריגות פתוחות</div>';
+    return;
+  }
+  el.innerHTML = Object.entries(byVendor).map(([vendor, count]) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;
+      padding:8px 0;border-bottom:1px solid var(--bd)">
+      <span>${vendor}</span>
+      <span class="tag tag-re">${count} חשבוניות</span>
+    </div>
+  `).join('');
+}
+
+function filterDashboard(status) {
+  _dashFilter = status;
+  // Update filter button styles
+  ['all','pending','disc','ok'].forEach(k => {
+    const btn = document.getElementById('filter-'+k);
+    if (btn) btn.style.borderColor = btn.style.color = '';
+  });
+  const activeMap = {'':'all','pending':'pending','discrepancy':'disc','approved':'ok'};
+  const activeId  = 'filter-' + (activeMap[status] || 'all');
+  const activeBtn = document.getElementById(activeId);
+  if (activeBtn) { activeBtn.style.borderColor = 'var(--or)'; activeBtn.style.color = 'var(--or)'; }
+  renderDashboard();
+}
+
+const STATUS_LABELS = {
+  pending:     {label:'ממתין',  cls:'tag-or'},
+  discrepancy: {label:'חריגה',  cls:'tag-re'},
+  approved:    {label:'אושר',   cls:'tag-gr'},
+};
+
+function renderDashboard() {
+  const filtered = _dashFilter
+    ? _dashInvoices.filter(i => i.status === _dashFilter)
+    : _dashInvoices;
+
+  const tbody = document.getElementById('dash-inv-tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--gy)">אין תוצאות</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(inv => {
+    const amount   = parseFloat(inv.total_amount) || 0;
+    const ils      = inv.currency === 'USD' ? amount * CUSTOMS_RATE : amount;
+    const st       = STATUS_LABELS[inv.status] || {label: inv.status, cls:'tag-gy'};
+    const cur      = inv.currency === 'ILS' ? '₪' : '$';
+    const discIcon = inv.status === 'discrepancy' ? '⚠' : inv.status === 'approved' ? '✓' : '–';
+    const discCls  = inv.status === 'discrepancy' ? 'color:var(--re)' : inv.status === 'approved' ? 'color:var(--gr)' : 'color:var(--gy)';
+    return `<tr style="cursor:pointer" onclick="openPipeline('${inv.invoice_id}')"
+              onmouseenter="this.style.background='#FFF7ED'" onmouseleave="this.style.background=''">
+      <td style="font-family:monospace;font-size:12px;font-weight:700;color:var(--bl)">${inv.invoice_id}</td>
+      <td>${inv.vendor}</td>
+      <td style="color:var(--gy);font-size:12px">${inv.date || ''}</td>
+      <td><span class="tag ${inv.currency==='ILS'?'tag-gr':'tag-bl'}">${inv.currency}</span></td>
+      <td style="text-align:left;font-weight:600">${cur}${amount.toLocaleString('he-IL',{minimumFractionDigits:2})}</td>
+      <td style="text-align:left;color:var(--gy);font-size:12px">₪${ils.toLocaleString('he-IL',{maximumFractionDigits:0})}</td>
+      <td style="text-align:center;font-weight:700;${discCls}">${discIcon}</td>
+      <td style="font-size:11px;color:var(--gy)">${inv.erp_status || '—'}</td>
+      <td><span class="tag ${st.cls}">${st.label}</span></td>
+      <td><button class="btn btn-out btn-sm" onclick="event.stopPropagation();openPipeline('${inv.invoice_id}')">פרטים ›</button></td>
+    </tr>`;
+  }).join('');
+
+  const totalILS = filtered.reduce((s, inv) => {
+    const a = parseFloat(inv.total_amount) || 0;
+    return s + (inv.currency === 'USD' ? a * CUSTOMS_RATE : a);
+  }, 0);
+  document.getElementById('dash-footer').textContent =
+    `${filtered.length} חשבוניות מוצגות  ·  שווי כולל: ₪${totalILS.toLocaleString('he-IL',{maximumFractionDigits:0})}`;
+}
+
+function openPipeline(invoiceId) {
+  // Navigate to pipeline and select invoice
+  const el = document.querySelector('#nav-pipeline');
+  nav('pipeline', el);
+  loadPipeline(invoiceId);
+}
+
+function updateSidebarBadges(kpi) {
+  const disc = document.getElementById('sb-badge-disc');
+  const pipe = document.getElementById('sb-badge-pipe');
+  if (kpi.discrepancy > 0) { disc.textContent = kpi.discrepancy; disc.style.display='inline-block'; }
+  else disc.style.display = 'none';
+  const pending = kpi.pending || 0;
+  if (pending > 0) { pipe.textContent = pending; pipe.style.display='inline-block'; }
+  else pipe.style.display = 'none';
+}
+
+// ── PIPELINE (Phase 2) ───────────────────────────────────────────────────────
+let _pipeInvoices  = [];
+let _pipeSelected  = null;
+
+async function loadPipeline(selectId = null) {
+  if (!_pipeInvoices.length) {
+    try {
+      const res  = await fetch(`${API_BASE}/invoices`, { signal: AbortSignal.timeout(5000) });
+      _pipeInvoices = await res.json();
+    } catch {
+      _pipeInvoices = _staticInvoices();
+    }
+  }
+  renderPipelineList();
+  const idToSelect = selectId || (_pipeInvoices[0] && _pipeInvoices[0].invoice_id);
+  if (idToSelect) selectPipelineInvoice(idToSelect);
+}
+
+function renderPipelineList() {
+  const list = document.getElementById('pipeline-inv-list');
+  list.innerHTML = _pipeInvoices.map(inv => {
+    const st = STATUS_LABELS[inv.status] || {label: inv.status, cls:'tag-gy'};
+    return `<div class="pl-item ${_pipeSelected===inv.invoice_id?'selected':''}"
+                 id="pl-item-${inv.invoice_id}"
+                 onclick="selectPipelineInvoice('${inv.invoice_id}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+        <div class="pl-item-id">${inv.invoice_id}</div>
+        <span class="tag ${st.cls}" style="font-size:9px">${st.label}</span>
+      </div>
+      <div class="pl-item-vendor">${inv.vendor}</div>
+      <div style="font-size:10px;color:var(--gy);margin-top:2px">${inv.currency} · ${inv.date||''}</div>
+    </div>`;
+  }).join('');
+}
+
+async function selectPipelineInvoice(id) {
+  _pipeSelected = id;
+  renderPipelineList();
+
+  const panel = document.getElementById('pipeline-detail-panel');
+  panel.innerHTML = `<div style="text-align:center;padding:40px;color:var(--gy)">
+    <div style="font-size:20px;margin-bottom:8px">⟳</div>טוען פרטי חשבונית...</div>`;
+
+  let detail = null;
+  let priceCheck = null;
+  try {
+    const [dRes, pcRes] = await Promise.all([
+      fetch(`${API_BASE}/invoices/${encodeURIComponent(id)}`, { signal: AbortSignal.timeout(5000) }),
+      fetch(`${API_BASE}/invoices/${encodeURIComponent(id)}/price-check`, { signal: AbortSignal.timeout(5000) }),
+    ]);
+    detail     = await dRes.json();
+    priceCheck = await pcRes.json();
+  } catch {
+    // Fallback to the invoice from cache without price-check detail
+    detail = _pipeInvoices.find(i => i.invoice_id === id) || null;
+  }
+
+  if (!detail || detail.error) {
+    panel.innerHTML = `<div class="alert al-re">שגיאה: לא נמצאה חשבונית ${id}</div>`;
+    return;
+  }
+
+  renderPipelineDetail(panel, detail, priceCheck);
+}
+
+function renderPipelineDetail(panel, inv, pc) {
+  const lines  = (pc && pc.lines) ? pc.lines : (inv.lines || []);
+  const amount = parseFloat(inv.total_amount) || 0;
+  const ils    = inv.currency === 'USD' ? amount * CUSTOMS_RATE : amount;
+  const discCount = lines.filter(l => l.status === 'discrepancy' || l.ok === false || l.ok === 'false').length;
+  const st         = STATUS_LABELS[inv.status] || {label: inv.status, cls:'tag-gy'};
+
+  const lineRows = lines.map(l => {
+    const billed   = parseFloat(l.billed_amount ?? l.billed ?? 0);
+    const agreed   = l.agreed_price != null ? parseFloat(l.agreed_price) :
+                     l.agreed      != null ? parseFloat(l.agreed)      : null;
+    const variance = (pc && l.variance_pct != null) ? parseFloat(l.variance_pct) : null;
+    const rowSt    = l.status || (l.ok === false || l.ok === 'false' ? 'discrepancy' :
+                                  l.ok === true  || l.ok === 'true'  ? 'ok'          : 'unknown');
+    const rowCls   = rowSt === 'discrepancy' ? 'pc-row-disc' : rowSt === 'ok' ? 'pc-row-ok' : 'pc-row-unk';
+    const varHtml  = variance !== null
+      ? `<span class="variance-pill ${Math.abs(variance)<0.01?'vp-ok':variance>0?'vp-disc':'vp-unk'}">
+           ${variance > 0 ? '+' : ''}${variance.toFixed(1)}%</span>`
+      : '<span style="color:var(--gy)">—</span>';
+    const agreeHtml = agreed != null
+      ? `${inv.currency === 'ILS' ? '₪' : '$'}${agreed.toLocaleString('he-IL',{minimumFractionDigits:2})}`
+      : '<span style="color:var(--gy)">—</span>';
+    const actionHtml = rowSt === 'discrepancy'
+      ? `<button class="btn btn-sm" style="background:#DCFCE7;color:#15803D;border:none"
+           onclick="approveLinePI('${inv.invoice_id}',${l.line_no||0},this)">אשר</button>`
+      : rowSt === 'unknown'
+      ? `<button class="btn btn-sm" style="background:var(--orl);color:var(--or);border:none">מפה ידנית</button>`
+      : '<span class="tag tag-gr" style="font-size:10px">✓</span>';
+    const billedFmt = `${inv.currency === 'ILS' ? '₪' : '$'}${billed.toLocaleString('he-IL',{minimumFractionDigits:2})}`;
+    return `<tr class="${rowCls}">
+      <td style="font-family:monospace;font-size:11px">${l.desc_raw || l.desc || ''}</td>
+      <td><span class="tag tag-bl" style="font-size:10px">${l.imp_code || l.imp || '—'}</span></td>
+      <td style="text-align:left">${agreeHtml}</td>
+      <td style="text-align:left;font-weight:600">${billedFmt}</td>
+      <td>${varHtml}</td>
+      <td>${actionHtml}</td>
+      ${l.note ? `<td style="font-size:10px;color:var(--gy)">${l.note}</td>` : '<td></td>'}
+    </tr>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="fade-in">
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <h2 style="font-size:16px;font-weight:800">${inv.invoice_id}</h2>
+            <span class="tag ${st.cls}">${st.label}</span>
+            ${discCount > 0 ? `<span class="tag tag-re">⚠ ${discCount} חריגות</span>` : ''}
+          </div>
+          <div style="display:flex;gap:16px;font-size:11px;color:var(--gy)">
+            <span>ספק: <strong style="color:var(--tx)">${inv.vendor}</strong></span>
+            ${inv.awb ? `<span>AWB: <strong style="font-family:monospace">${inv.awb}</strong></span>` : ''}
+            ${inv.po  ? `<span>PO: <strong>${inv.po}</strong></span>` : ''}
+            ${inv.month ? `<span>חודש: <strong>${inv.month}</strong></span>` : ''}
+          </div>
+        </div>
+        <div style="text-align:left">
+          <div style="font-size:11px;color:var(--gy)">סה"כ חשבונית</div>
+          <div style="font-size:20px;font-weight:800">${inv.currency==='ILS'?'₪':'$'}${amount.toLocaleString('he-IL',{minimumFractionDigits:2})}</div>
+          ${inv.currency==='USD' ? `<div style="font-size:11px;color:var(--gy)">≈ ₪${ils.toLocaleString('he-IL',{maximumFractionDigits:0})}</div>` : ''}
+          <div style="font-size:11px;color:var(--gy);margin-top:2px">ERP: ${inv.erp_status||'—'}</div>
+        </div>
+      </div>
+
+      ${discCount > 0 ? `
+        <div class="alert al-re" style="margin-bottom:14px">
+          ⚠ נמצאו <strong>${discCount} חריגות מחיר</strong> — יש לאשר או לדחות לפני שליחה ל-M3
+        </div>` : `
+        <div class="alert al-gr" style="margin-bottom:14px">
+          ✅ כל השורות תואמות את המחירון המוסכם
+        </div>`}
+
+      <!-- Lines table -->
+      <div class="card" style="overflow:hidden;margin-bottom:0">
+        <div class="card-title">שורות חשבונית · סיווג IMP · בקרת מחירים</div>
+        <div style="overflow-x:auto">
+          <table class="pc-table">
+            <thead>
+              <tr>
+                <th>תיאור מקורי</th>
+                <th>קוד IMP</th>
+                <th style="text-align:left">מוסכם</th>
+                <th style="text-align:left">חויב</th>
+                <th>סטייה</th>
+                <th>פעולה</th>
+                <th>הערה</th>
+              </tr>
+            </thead>
+            <tbody>${lineRows || '<tr><td colspan="7" style="text-align:center;color:var(--gy);padding:16px">אין שורות</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+}
+
+function approveLinePI(invoiceId, lineNo, btn) {
+  btn.textContent = '...';
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.closest('tr').className = 'pc-row-ok';
+    btn.parentElement.innerHTML = '<span class="tag tag-gr" style="font-size:10px">✓ אושר</span>';
+    logAction('APPROVE_LINE', `${invoiceId} · שורה ${lineNo}`, 'ok');
+  }, 800);
+}
+
+// ── API BRIDGE ───────────────────────────────────────────────────────────────
+// When opened as a local file (file://) point at the dev server.
+// When served by Flask in production, use a same-origin relative path.
+const API_BASE = window.location.protocol === 'file:'
+  ? 'http://localhost:5001/api'
+  : '/api';
+
+function setApiBadge(state, text) {
+  const dot   = document.getElementById('api-dot');
+  const label = document.getElementById('api-label');
+  const badge = document.getElementById('api-status-badge');
+  const colors = {
+    checking: { dot:'#D1D5DB', bg:'#F3F4F6', fg:'#6B7280', border:'#E5E7EB' },
+    ok:       { dot:'#16A34A', bg:'#F0FDF4', fg:'#15803D', border:'#BBF7D0' },
+    error:    { dot:'#DC2626', bg:'#FEF2F2', fg:'#DC2626', border:'#FECACA' },
+  };
+  const c = colors[state] || colors.checking;
+  dot.style.background   = c.dot;
+  badge.style.background = c.bg;
+  badge.style.color      = c.fg;
+  badge.style.borderColor = c.border;
+  label.textContent = text;
+}
+
+function showApiBanner(state, html) {
+  const banner = document.getElementById('api-banner');
+  const styles = {
+    ok:    { bg:'#F0FDF4', fg:'#15803D', border:'#BBF7D0' },
+    error: { bg:'#FEF2F2', fg:'#DC2626', border:'#FECACA' },
+    info:  { bg:'#EFF6FF', fg:'#1D4ED8', border:'#BFDBFE' },
+  };
+  const s = styles[state] || styles.info;
+  banner.style.display     = 'block';
+  banner.style.background  = s.bg;
+  banner.style.color       = s.fg;
+  banner.style.borderColor = s.border;
+  banner.innerHTML         = html;
+}
+
+async function pingAPI() {
+  setApiBadge('checking', 'API: בודק...');
+  try {
+    const res = await fetch(`${API_BASE}/status`, { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    setApiBadge('ok', '✓ API: מחובר');
+    const kpi = data.kpi || {};
+    showApiBanner('ok', `
+      <strong>✅ חיבור ל-API הצליח</strong> — ${data.message}
+      <span style="margin:0 12px;opacity:.4">|</span>
+      חשבוניות טעונות: <strong>${kpi.total_invoices ?? '?'}</strong>
+      &nbsp;·&nbsp; ממתינות: <strong>${kpi.pending ?? '?'}</strong>
+      &nbsp;·&nbsp; חריגות: <strong>${kpi.discrepancy ?? '?'}</strong>
+      &nbsp;·&nbsp; אושרו: <strong>${kpi.approved ?? '?'}</strong>
+      &nbsp;·&nbsp; שווי כולל: <strong>₪${(kpi.total_value_ils ?? 0).toLocaleString('he-IL', {maximumFractionDigits:0})}</strong>
+      <button onclick="document.getElementById('api-banner').style.display='none'"
+        style="float:left;background:none;border:none;cursor:pointer;font-size:14px;color:inherit;opacity:.6;line-height:1">✕</button>
+    `);
+
+    // Sync live supplier count into sidebar badge if available
+    if (data.data_loaded?.suppliers) {
+      logAction('API_PING', `נטענו ${data.data_loaded.suppliers} ספקים, ${data.data_loaded.invoices} חשבוניות`, 'ok');
+      renderAudit();
+    }
+  } catch (err) {
+    setApiBadge('error', '✗ API: לא זמין');
+    showApiBanner('error', `
+      <strong>⚠ שגיאת חיבור לשרת Python</strong>
+      <span style="margin:0 10px;opacity:.4">|</span>
+      הרץ: <code style="background:rgba(0,0,0,.07);padding:2px 6px;border-radius:4px">cd backend &amp;&amp; python app.py</code>
+      ואז רענן.
+      <span style="font-size:11px;opacity:.7;margin-right:8px">(${err.message})</span>
+      <button onclick="document.getElementById('api-banner').style.display='none'"
+        style="float:left;background:none;border:none;cursor:pointer;font-size:14px;color:inherit;opacity:.6;line-height:1">✕</button>
+    `);
+  }
+}
+
 // ── INIT ─────────────────────────────────────────────────────────────────────
 renderSuppliers();
 populateSupplierSelects();
 renderIMP();
 renderPrices();
-renderAudit();
+renderAudit(); // render static data immediately; API load happens on nav
+pingAPI();
+loadDashboard(); // boot the dashboard immediately
 </script>
 </body>
 </html>
