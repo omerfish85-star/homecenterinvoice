@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HomCenter – מערכת חשבוניות יבוא</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --or:#F97316;--orl:#FFF7ED;--orm:#FED7AA;
+  --bl:#1D4ED8;--bll:#EFF6FF;
+  --gr:#16A34A;--grl:#F0FDF4;
+  --re:#DC2626;--rel:#FEF2F2;
+  --gy:#6B7280;--bd:#E5E7EB;
+  --tx:#111827;--t2:#4B5563;
+  --sb:#1E293B;--sbh:#334155;
+  --ra:10px;--sh:0 2px 12px rgba(0,0,0,.08);
+}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
+  display:flex;min-height:100vh;font-size:14px}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;background:var(--sb);display:flex;flex-direction:column;
+  flex-shrink:0;position:fixed;top:0;right:0;bottom:0;z-index:200;overflow-y:auto}
+.sb-logo{padding:20px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-logo-text{font-size:18px;font-weight:800;color:#fff}
+.sb-logo-text span{color:var(--or)}
+.sb-logo-sub{font-size:10px;color:#94A3B8;margin-top:2px}
+.sb-section{padding:12px 10px 4px;font-size:10px;font-weight:700;color:#64748B;
+  text-transform:uppercase;letter-spacing:.7px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 14px;margin:1px 6px;
+  border-radius:7px;cursor:pointer;color:#94A3B8;font-size:13px;font-weight:500;
+  transition:all .15s;user-select:none}
+.sb-item:hover{background:var(--sbh);color:#fff}
+.sb-item.active{background:var(--or);color:#fff}
+.sb-item .icon{font-size:15px;width:18px;text-align:center}
+.sb-bottom{margin-top:auto;padding:12px 6px;border-top:1px solid rgba(255,255,255,.08)}
+
+/* ── MAIN ── */
+.main{margin-right:220px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid var(--bd);padding:0 24px;
+  height:52px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100}
+.topbar-title{font-size:15px;font-weight:700}
+.topbar-badge{background:var(--orl);color:var(--or);font-size:11px;font-weight:700;
+  padding:3px 10px;border-radius:20px;border:1px solid var(--orm)}
+.content{padding:24px;flex:1}
+
+/* ── VIEWS ── */
+.view{display:none}.view.active{display:block}
+
+/* ── CARDS ── */
+.card{background:#fff;border-radius:var(--ra);border:1px solid var(--bd);
+  padding:20px;box-shadow:var(--sh);margin-bottom:16px}
+.card-title{font-size:14px;font-weight:700;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* ── FORM ── */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.fg label{font-size:11px;font-weight:700;color:var(--gy)}
+.fg input,.fg select,.fg textarea{padding:8px 10px;border:1px solid var(--bd);
+  border-radius:7px;font-size:13px;background:#fff;color:var(--tx);
+  transition:border .15s;font-family:inherit;width:100%}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--or)}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:right;padding:8px 12px;font-size:11px;font-weight:700;
+  color:var(--gy);border-bottom:2px solid var(--bd);background:#FAFAFA}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--bd);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#FFFAF5}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
+  border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-or{background:var(--or);color:#fff}.btn-or:hover{background:#EA580C}
+.btn-out{background:#fff;border:1px solid var(--bd);color:var(--tx)}.btn-out:hover{border-color:var(--or);color:var(--or)}
+.btn-re{background:#FEE2E2;color:var(--re);border:none}.btn-re:hover{background:#FECACA}
+.btn-gr{background:var(--gr);color:#fff}
+.btn-sm{padding:5px 10px;font-size:11px;border-radius:5px}
+
+/* ── BADGE ── */
+.tag{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.tag-gr{background:#DCFCE7;color:#15803D}
+.tag-or{background:var(--orl);color:#C2410C}
+.tag-bl{background:#DBEAFE;color:#1E40AF}
+.tag-gy{background:#F3F4F6;color:#4B5563}
+.tag-re{background:#FEE2E2;color:var(--re)}
+
+/* ── METRICS ── */
+.metric{background:#fff;border-radius:var(--ra);border:1px solid var(--bd);
+  padding:16px;text-align:center;box-shadow:var(--sh)}
+.metric-val{font-size:26px;font-weight:800;margin-bottom:3px}
+.metric-lbl{font-size:11px;color:var(--gy)}
+
+/* ── PILOT ── */
+.pipeline{display:flex;background:#fff;border-radius:var(--ra);border:1px solid var(--bd);overflow:hidden;margin-bottom:14px}
+.ps{flex:1;padding:12px 6px;text-align:center;cursor:pointer;
+  border-left:1px solid var(--bd);transition:all .2s}
+.ps:last-child{border-left:none}
+.ps.done{background:var(--grl)}
+.ps.active{background:var(--orl)}
+.ps-n{width:22px;height:22px;border-radius:50%;margin:0 auto 5px;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.ps.done .ps-n{background:var(--gr);color:#fff}
+.ps.active .ps-n{background:var(--or);color:#fff}
+.ps.pending .ps-n{background:var(--bd);color:var(--gy)}
+.ps-l{font-size:11px;font-weight:600;color:var(--t2)}
+.ps.active .ps-l{color:var(--or)}
+.ps.done .ps-l{color:var(--gr)}
+.prog-bar{height:4px;background:var(--bd);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.prog-fill{height:100%;background:var(--or);border-radius:2px;transition:width .4s}
+.inv-card{background:#fff;border-radius:var(--ra);border:1px solid var(--bd);overflow:hidden;margin-bottom:14px}
+.inv-hdr{background:var(--orl);border-bottom:1px solid var(--orm);padding:14px 18px;
+  display:flex;justify-content:space-between;align-items:center}
+.map-row{display:grid;grid-template-columns:2fr .4fr 1.2fr 1fr 70px;gap:8px;
+  align-items:center;padding:9px 12px;border-radius:7px;margin-bottom:5px;
+  border:1px solid var(--bd);font-size:12px}
+.map-row.ok{border-color:#BBF7D0;background:var(--grl)}
+.imp-b{background:#DBEAFE;color:#1E40AF;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700}
+.json-box{background:#1E293B;border-radius:8px;padding:14px;font-family:monospace;
+  font-size:11px;color:#E2E8F0;max-height:180px;overflow-y:auto;line-height:1.8}
+.jk{color:#7DD3FC}.js{color:#A7F3D0}.jn{color:#FDE68A}
+.alert{border-radius:7px;padding:10px 14px;font-size:12px;margin-bottom:10px}
+.al-gr{background:var(--grl);border:1px solid #BBF7D0;color:#15803D}
+.al-bl{background:var(--bll);border:1px solid #BFDBFE;color:#1E40AF}
+.al-re{background:var(--rel);border:1px solid #FECACA;color:var(--re)}
+.al-or{background:var(--orl);border:1px solid var(--orm);color:#C2410C}
+.hidden{display:none}
+.divider{border:none;border-top:1px solid var(--bd);margin:18px 0}
+.section-lbl{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.6px;color:var(--or);margin-bottom:6px}
+.spinner{display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── TOGGLE ── */
+.tog-wrap{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:#FAFAFA;border:1px solid var(--bd);border-radius:7px;cursor:pointer;margin-bottom:12px}
+.tog{width:36px;height:20px;border-radius:10px;background:#D1D5DB;position:relative;
+  transition:background .2s;flex-shrink:0}
+.tog.on{background:var(--or)}
+.tog::after{content:'';position:absolute;left:2px;top:2px;width:16px;height:16px;
+  border-radius:50%;background:#fff;transition:left .2s}
+.tog.on::after{left:18px}
+.tog-lbl{font-size:13px;font-weight:600}
+.tog-sub{font-size:11px;color:var(--gy);margin-right:auto}
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-text">🏗️ הום<span>סנטר</span></div>
+    <div class="sb-logo-sub">מערכת חשבוניות יבוא</div>
+  </div>
+
+  <div class="sb-section">ראשי</div>
+  <div class="sb-item active" onclick="nav('pilot',this)"><span class="icon">📊</span>פיילוט – עיבוד חשבונית</div>
+
+  <div class="sb-section">ניהול ידני</div>
+  <div class="sb-item" onclick="nav('suppliers',this)"><span class="icon">🏢</span>ספקים</div>
+  <div class="sb-item" onclick="nav('prices',this)"><span class="icon">💰</span>מחירונים</div>
+  <div class="sb-item" onclick="nav('imp',this)"><span class="icon">🗂️</span>טבלת IMP</div>
+
+  <div class="sb-section">מערכת</div>
+  <div class="sb-item" onclick="nav('settings',this)"><span class="icon">⚙️</span>הגדרות</div>
+  <div class="sb-item" onclick="nav('audit',this)"><span class="icon">📜</span>יומן פעילות</div>
+
+  <div class="sb-bottom">
+    <div style="font-size:11px;color:#64748B;padding:0 8px">גרסה 1.0 · פיילוט 2025</div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">📊 פיילוט – עיבוד חשבונית</div>
+    <div class="topbar-badge">HomCenter · פיילוט</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- VIEW: PILOT                                           -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="view active" id="view-pilot">
+      <div class="section-lbl">חשבונית לדוגמה</div>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:14px">חשבונית PDF שהגיעה מאורשר שילוח — המערכת מעבדת אוטומטית.</p>
+
+      <div class="inv-card">
+        <div class="inv-hdr">
+          <div><div style="font-size:14px;font-weight:700">אורשר שילוח בין לאומי בע"מ</div>
+            <div style="font-size:11px;color:#92400E">International Forwarding · אשדוד</div></div>
+          <div style="text-align:left">
+            <div style="font-size:16px;font-weight:800;color:#92400E">חשבונית 558574</div>
+            <div style="font-size:11px;color:#92400E">29/09/2025</div>
+          </div>
+        </div>
+        <div style="padding:16px">
+          <div class="g3" style="margin-bottom:12px">
+            <div><label style="font-size:10px;color:var(--gy);font-weight:700;display:block">מכולה</label>
+              <span style="font-size:13px;font-weight:600">MEDU-440413-2</span></div>
+            <div><label style="font-size:10px;color:var(--gy);font-weight:700;display:block">רשימון</label>
+              <span style="font-size:13px;font-weight:600">MEDUJY548987</span></div>
+            <div><label style="font-size:10px;color:var(--gy);font-weight:700;display:block">מטבע</label>
+              <span style="font-size:13px;font-weight:600">ILS ₪</span></div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>סעיף</th><th>סכום ₪</th><th>מע"מ</th></tr></thead>
+            <tbody>
+              <tr><td>דמי מכס</td><td>89.00</td><td><span class="tag tag-gy">לא חייב</span></td></tr>
+              <tr><td>מע"מ למכס</td><td>43,783.00</td><td><span class="tag tag-gy">לא חייב</span></td></tr>
+              <tr><td>מיסי נמל</td><td>195.41</td><td><span class="tag tag-gy">לא חייב</span></td></tr>
+              <tr><td>עמילות 04</td><td>250.00</td><td><span class="tag tag-or">חייב 18%</span></td></tr>
+            </tbody>
+          </table>
+          <div style="text-align:left;margin-top:12px">
+            <div style="background:#FAFAFA;border-radius:7px;padding:12px 16px;display:inline-block;min-width:200px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gy);padding:3px 0"><span>לא חייב מע"מ</span><span>₪44,067.41</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gy);padding:3px 0"><span>מע"מ (18%)</span><span>₪45.00</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800;padding:7px 0 3px;border-top:2px solid var(--bd);margin-top:4px"><span>סה"כ</span><span>₪44,362.41</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipeline" id="pipeline">
+        <div class="ps pending" id="ps1"><div class="ps-n">1</div><div class="ps-l">ניתוח PDF</div></div>
+        <div class="ps pending" id="ps2"><div class="ps-n">2</div><div class="ps-l">זיהוי ספק</div></div>
+        <div class="ps pending" id="ps3"><div class="ps-n">3</div><div class="ps-l">מיפוי IMP</div></div>
+        <div class="ps pending" id="ps4"><div class="ps-n">4</div><div class="ps-l">בקרת מחירים</div></div>
+        <div class="ps pending" id="ps5"><div class="ps-n">5</div><div class="ps-l">פלט M3</div></div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+      <div id="prog-msg" style="font-size:12px;color:var(--gy);min-height:18px;margin-bottom:12px"></div>
+
+      <div style="display:flex;gap:10px;margin-bottom:18px">
+        <button class="btn btn-or" id="run-btn" onclick="runPipeline()">
+          <div class="spinner" id="spin"></div><span id="run-lbl">▶ הרץ עיבוד</span>
+        </button>
+        <button class="btn btn-out hidden" id="rst-btn" onclick="resetPipeline()">↺ איפוס</button>
+      </div>
+
+      <div id="p-imp" class="card hidden">
+        <div class="card-title" style="color:var(--bl)">🗂️ מיפוי IMP — 4 סעיפים</div>
+        <div style="display:grid;grid-template-columns:2fr .4fr 1.2fr 1fr 70px;gap:8px;padding:0 12px 6px;font-size:10px;color:var(--gy);font-weight:700">
+          <div>תיאור בחשבונית</div><div></div><div>קוד IMP</div><div>קטגוריה</div><div>סטטוס</div>
+        </div>
+        <div class="map-row ok"><div style="font-weight:500">דמי מכס</div><div style="color:#9CA3AF;text-align:center">→</div><div><span class="imp-b">IMP 2</span></div><div style="color:var(--gy)">DUTY</div><div style="color:var(--gr);font-weight:700">✓ תקין</div></div>
+        <div class="map-row ok"><div style="font-weight:500">מע"מ למכס</div><div style="color:#9CA3AF;text-align:center">→</div><div><span class="imp-b">IMP 3</span></div><div style="color:var(--gy)">DUTY</div><div style="color:var(--gr);font-weight:700">✓ תקין</div></div>
+        <div class="map-row ok"><div style="font-weight:500">מיסי נמל</div><div style="color:#9CA3AF;text-align:center">→</div><div><span class="imp-b">IMP 4</span></div><div style="color:var(--gy)">PORT</div><div style="color:var(--gr);font-weight:700">✓ תקין</div></div>
+        <div class="map-row ok"><div style="font-weight:500">עמילות 04</div><div style="color:#9CA3AF;text-align:center">→</div><div><span class="imp-b">IMP 5</span></div><div style="color:var(--gy)">HANDLING</div><div style="color:var(--gr);font-weight:700">✓ תקין</div></div>
+      </div>
+
+      <div id="p-price" class="card hidden">
+        <div class="card-title" style="color:var(--gr)">✅ בקרת מחירים — 0 חריגות</div>
+        <div class="alert al-gr">כל 4 הסעיפים תואמים את המחירון המוסכם. סטייה: 0.0%</div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 70px;gap:8px;padding:0 12px 6px;font-size:10px;color:var(--gy);font-weight:700"><div>סעיף</div><div>חויב</div><div>מוסכם</div><div>סטייה</div></div>
+        <div class="map-row ok" style="grid-template-columns:2fr 1fr 1fr 70px"><div>דמי מכס</div><div>₪89.00</div><div>₪89.00</div><div style="color:var(--gr);font-weight:700;text-align:center">0.0%</div></div>
+        <div class="map-row ok" style="grid-template-columns:2fr 1fr 1fr 70px"><div>מע"מ למכס</div><div>₪43,783.00</div><div>₪43,783.00</div><div style="color:var(--gr);font-weight:700;text-align:center">0.0%</div></div>
+        <div class="map-row ok" style="grid-template-columns:2fr 1fr 1fr 70px"><div>מיסי נמל</div><div>₪195.41</div><div>₪195.41</div><div style="color:var(--gr);font-weight:700;text-align:center">0.0%</div></div>
+        <div class="map-row ok" style="grid-template-columns:2fr 1fr 1fr 70px"><div>עמילות</div><div>₪250.00</div><div>₪250.00</div><div style="color:var(--gr);font-weight:700;text-align:center">0.0%</div></div>
+      </div>
+
+      <div id="p-m3" class="card hidden">
+        <div class="card-title" style="color:#7C3AED">📤 פלט M3 — APS450MI מוכן</div>
+        <div class="alert al-bl">5 פקודות מוכנות לשליחה ל-Infor M3 דרך ION API</div>
+        <div class="json-box" id="json-out"></div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-gr btn-sm">⬇ הורד JSON</button>
+          <button class="btn btn-out btn-sm">⬇ Excel</button>
+        </div>
+      </div>
+
+      <div id="p-final" class="hidden">
+        <div class="divider"></div>
+        <div class="g4">
+          <div class="metric"><div class="metric-val" style="color:var(--or)">8 שנ'</div><div class="metric-lbl">זמן עיבוד</div></div>
+          <div class="metric"><div class="metric-val" style="color:var(--gr)">100%</div><div class="metric-lbl">שורות עברו בקרה</div></div>
+          <div class="metric"><div class="metric-val" style="color:var(--bl)">5</div><div class="metric-lbl">פקודות ל-M3</div></div>
+          <div class="metric"><div class="metric-val" style="color:#7C3AED">0</div><div class="metric-lbl">טעויות ידניות</div></div>
+        </div>
+        <div class="alert al-gr" style="margin-top:14px;font-size:13px">
+          <strong>✅ הפיילוט הצליח.</strong> המערכת מוכנה לפריסה על שרת פנימי.
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- VIEW: SUPPLIERS                                       -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="view" id="view-suppliers">
+      <div class="section-lbl">ניהול ספקים</div>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:16px">כל ספק שמוסף כאן יוכל לקבל מחירון ולהיות מזוהה אוטומטית ממייל.</p>
+
+      <div class="card">
+        <div class="card-title">📤 ייבוא מ-Excel</div>
+        <div class="alert al-bl" style="margin-bottom:12px">
+          <strong>פורמט נדרש – עמודות חובה:</strong>
+          <span style="font-family:monospace;font-size:11px;margin-right:6px">imp_code | imp_description | keyword_pattern</span>
+          <br>עמודות רשות: <span style="font-family:monospace;font-size:11px">category | priority | notes</span>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:8px;padding:9px 16px;border:1px dashed var(--or);border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:var(--or);background:var(--orl)">
+            📎 בחר קובץ Excel
+            <input type="file" id="imp-excel-input" accept=".xlsx,.xls" style="display:none" onchange="handleImpExcel(this)">
+          </label>
+          <button class="btn btn-out btn-sm" onclick="downloadImpTemplate()">⬇ הורד תבנית Excel</button>
+          <span id="imp-file-name" style="font-size:12px;color:var(--gy)"></span>
+        </div>
+        <div id="imp-excel-preview" class="hidden" style="margin-top:14px">
+          <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px">תצוגה מקדימה:</div>
+          <div style="overflow-x:auto">
+            <table class="tbl" id="imp-preview-table" style="font-size:12px"></table>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+            <button class="btn btn-or" onclick="importImpFromExcel()">✅ ייבא <span id="imp-preview-count"></span> כללים</button>
+            <button class="btn btn-out btn-sm" onclick="clearImpExcel()">ביטול</button>
+            <div id="imp-import-result" style="font-size:12px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">➕ הוספת ספק חדש</div>
+        <div class="g2">
+          <div>
+            <div class="fg"><label>קוד ספק *</label><input id="s-code" placeholder="CARGO360" style="text-transform:uppercase"></div>
+            <div class="fg"><label>שם ספק *</label><input id="s-name" placeholder="קרגו 360 בע&quot;מ"></div>
+          </div>
+          <div>
+            <div class="fg"><label>תבניות זיהוי מייל (מופרד בפסיק)</label><input id="s-patterns" placeholder="@cargo360.co.il, cargo360"></div>
+            <div class="fg"><label>מטבעות מורשים</label>
+              <div style="display:flex;gap:14px;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:#fff">
+                <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;cursor:pointer">
+                  <input type="checkbox" id="s-cur-ils" checked> ILS ₪
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;cursor:pointer">
+                  <input type="checkbox" id="s-cur-usd"> USD $
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-or" onclick="addSupplier()">💾 הוסף ספק</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏢 ספקים רשומים</div>
+        <table class="tbl" id="sup-table">
+          <thead><tr><th>קוד</th><th>שם ספק</th><th>מטבע</th><th>זיהוי מייל</th><th>סוג</th><th>פעולות</th></tr></thead>
+          <tbody id="sup-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- VIEW: PRICES                                          -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="view" id="view-prices">
+      <div class="section-lbl">ניהול מחירונים</div>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:16px">הגדר מחיר מוסכם לכל קוד IMP לכל ספק. המערכת תשווה כל חשבונית למחירון.</p>
+
+      <div class="card">
+        <div class="card-title">➕ הוספת מחיר</div>
+        <div class="g3">
+          <div class="fg"><label>ספק *</label><select id="p-sup" onchange="updateImpOpts()"></select></div>
+          <div class="fg"><label>קוד IMP *</label><select id="p-imp"></select></div>
+          <div class="fg"><label>מחיר מוסכם *</label><input id="p-price" type="number" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="fg"><label>מטבע</label><select id="p-cur"><option>ILS</option><option>USD</option></select></div>
+          <div class="fg"><label>תוקף מ- (YYYY-MM)</label><input id="p-from" placeholder="2025-09"></div>
+          <div class="fg"><label>תוקף עד (ריק = פתוח)</label><input id="p-to" placeholder="2025-12"></div>
+        </div>
+        <button class="btn btn-or" onclick="addPrice()">💾 הוסף מחיר</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📤 ייבוא מחירון מ-Excel</div>
+        <div class="alert al-bl" style="margin-bottom:12px">
+          <strong>פורמט נדרש – עמודות חובה:</strong>
+          <span style="font-family:monospace;font-size:11px;margin-right:6px">imp_code | unit_price | currency | valid_from</span>
+          <br>עמודות רשות: <span style="font-family:monospace;font-size:11px">service_name | valid_to | notes</span>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:11px;font-weight:700;color:var(--gy)">ספק: </label>
+          <select id="px-sup" style="padding:5px 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px"></select>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:8px;padding:9px 16px;border:1px dashed var(--or);border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:var(--or);background:var(--orl)">
+            📎 בחר קובץ Excel
+            <input type="file" id="px-input" accept=".xlsx,.xls" style="display:none" onchange="handlePriceExcel(this)">
+          </label>
+          <button class="btn btn-out btn-sm" onclick="downloadPriceTemplate()">⬇ הורד תבנית Excel</button>
+          <span id="px-file-name" style="font-size:12px;color:var(--gy)"></span>
+        </div>
+        <div id="px-preview-wrap" class="hidden" style="margin-top:14px">
+          <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px">תצוגה מקדימה:</div>
+          <div style="overflow-x:auto">
+            <table class="tbl" id="px-preview-table" style="font-size:12px"></table>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+            <button class="btn btn-or" onclick="importPriceExcel()">✅ ייבא <span id="px-count"></span> מחירים</button>
+            <button class="btn btn-out btn-sm" onclick="clearPriceExcel()">ביטול</button>
+            <div id="px-result" style="font-size:12px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💰 מחירון נוכחי</div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:11px;font-weight:700;color:var(--gy)">סנן לפי ספק: </label>
+          <select id="p-filter" onchange="renderPrices()" style="padding:5px 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px">
+            <option value="">כל הספקים</option>
+          </select>
+        </div>
+        <table class="tbl">
+          <thead><tr><th>ספק</th><th>IMP</th><th>תיאור</th><th>מחיר</th><th>מטבע</th><th>תוקף מ-</th><th>תוקף עד</th><th></th></tr></thead>
+          <tbody id="price-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- VIEW: IMP                                             -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="view" id="view-imp">
+      <div class="section-lbl">טבלת IMP</div>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:16px">כל כלל מגדיר: "אם הסעיף בחשבונית מכיל את הטקסט הזה ← שייך ל-IMP X".</p>
+
+      <div class="card">
+        <div class="card-title">➕ הוספת כלל מיפוי</div>
+        <div class="g2">
+          <div>
+            <div class="fg"><label>קוד IMP *</label><input id="i-code" type="number" placeholder="1" min="1"></div>
+            <div class="fg"><label>תיאור IMP *</label><input id="i-desc" placeholder="Customs Duty"></div>
+            <div class="fg"><label>קטגוריה</label>
+              <select id="i-cat">
+                <option>TRANSPORT</option><option>DUTY</option><option>PORT</option>
+                <option>HANDLING</option><option>INSURANCE</option><option>OTHER</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <div class="fg"><label>תבנית זיהוי (Regex) *</label>
+              <input id="i-pat" placeholder="דמי\s*מכס|customs duty">
+            </div>
+            <div class="fg"><label>עדיפות (1=ראשון)</label>
+              <input id="i-pri" type="number" value="100" min="1" max="999">
+            </div>
+            <div class="fg"><label>הערות</label><input id="i-notes" placeholder="אופציונלי"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn btn-or" onclick="addIMP()">💾 הוסף כלל</button>
+          <div id="i-test-wrap" style="display:flex;gap:8px;align-items:center;flex:1">
+            <input id="i-test-txt" placeholder="🔍 הכנס טקסט לבדיקת מיפוי..." style="flex:1;padding:7px 10px;border:1px solid var(--bd);border-radius:7px;font-size:12px">
+            <button class="btn btn-out btn-sm" onclick="testIMP()">בדוק</button>
+          </div>
+        </div>
+        <div id="i-test-result" style="margin-top:8px;font-size:12px"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🗂️ כללי מיפוי קיימים</div>
+        <table class="tbl">
+          <thead><tr><th>IMP</th><th>תיאור</th><th>קטגוריה</th><th>תבנית זיהוי</th><th>עדיפות</th><th>פעולות</th></tr></thead>
+          <tbody id="imp-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- VIEW: SETTINGS                                        -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="view" id="view-settings">
+      <div class="section-lbl">הגדרות מערכת</div>
+
+      <div class="card">
+        <div class="card-title">📧 חיבור מייל ארגוני</div>
+        <div class="tog-wrap" onclick="toggleEmail()">
+          <div class="tog" id="email-tog"></div>
+          <div><div class="tog-lbl">חיבור מייל אוטומטי</div>
+            <div class="tog-sub" id="email-tog-sub">כבוי – ניתן להפעיל בעתיד</div></div>
+          <span class="tag tag-gy" id="email-tog-tag">כבוי</span>
+        </div>
+        <div class="g2">
+          <div class="fg"><label>פרוטוקול</label>
+            <select id="st-proto" onchange="toggleProto()">
+              <option value="IMAP">IMAP</option>
+              <option value="EWS">Exchange (EWS)</option>
+            </select>
+          </div>
+          <div class="fg"><label>שרת מייל</label><input id="st-host" placeholder="mail.homecenter.co.il"></div>
+          <div class="fg"><label>שם משתמש</label><input id="st-user" placeholder="customs@homecenter.co.il"></div>
+          <div class="fg"><label>סיסמה</label><input type="password" id="st-pass" placeholder="••••••••"></div>
+          <div id="st-imap-extra">
+            <div class="fg"><label>פורט</label><input id="st-port" value="993" type="number"></div>
+          </div>
+          <div class="fg"><label>תיקיית מייל</label><input id="st-folder" value="INBOX" placeholder="INBOX/customs"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="btn btn-or" onclick="saveSettings()">💾 שמור</button>
+          <button class="btn btn-out" onclick="testEmail()">🔌 בדוק חיבור</button>
+        </div>
+        <div id="st-email-result" style="margin-top:8px"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔗 Infor M3 – הגדרות ייצוא</div>
+        <div class="alert al-or">ניתן להשאיר ריק – המערכת תעבוד במצב Dry Run (ייצוא JSON בלבד).</div>
+        <div class="g3">
+          <div class="fg"><label>קוד חברה (CONO)</label><input id="st-cono" value="100"></div>
+          <div class="fg"><label>אגף (DIVI)</label><input id="st-divi" value="HC"></div>
+          <div class="fg"><label>קוד מע"מ (VT01)</label><input id="st-vat" value="6"></div>
+          <div class="fg"><label>ION Base URL</label><input id="st-ion" placeholder="https://mingle-ionapi.inforcloudsuite.com"></div>
+          <div class="fg"><label>Tenant ID</label><input id="st-tenant" placeholder="HOMECENTER_PRD"></div>
+          <div class="fg"><label>Client ID</label><input id="st-cid" placeholder=""></div>
+        </div>
+        <button class="btn btn-or" onclick="saveSettings()">💾 שמור הגדרות M3</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🛡️ בקרת מחירים</div>
+        <div class="g2">
+          <div class="fg">
+            <label>סף חריגת מחיר (%)</label>
+            <input type="range" id="tol-range" min="0" max="20" value="5" step="0.5" oninput="document.getElementById('tol-val').textContent=this.value+'%'">
+            <div style="font-size:18px;font-weight:800;color:var(--or);margin-top:4px" id="tol-val">5%</div>
+            <div style="font-size:11px;color:var(--gy)">חריגה מעל ערך זה תחסום את הייצוא</div>
+          </div>
+          <div class="fg">
+            <label>מטבע ברירת מחדל</label>
+            <select id="st-defcur"><option>ILS</option><option>USD</option></select>
+          </div>
+        </div>
+        <button class="btn btn-or" onclick="saveSettings()">💾 שמור</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- VIEW: AUDIT                                           -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="view" id="view-audit">
+      <div class="section-lbl">יומן פעילות</div>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:16px">תיעוד של כל פעולה שבוצעה במערכת.</p>
+      <div class="card">
+        <table class="tbl">
+          <thead><tr><th>זמן</th><th>פעולה</th><th>פרטים</th><th>סטטוס</th></tr></thead>
+          <tbody id="audit-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ── STATE ────────────────────────────────────────────────────────────────────
+const state = {
+  suppliers: [
+    {code:'ORSHAR', name:'אורשר שילוח בין לאומי בע"מ', currencies:['ILS'], patterns:'@orshar.co.il, orshar', type:'builtin'},
+    {code:'DHL',    name:'DHL Express / Freight',        currencies:['ILS','USD'], patterns:'@dhl.com, dhl-israel', type:'builtin'},
+  ],
+  prices: [
+    {sup:'ORSHAR', imp:2, desc:'Customs Duty',      price:89,      cur:'ILS', from:'2025-09', to:''},
+    {sup:'ORSHAR', imp:3, desc:'VAT on Customs',    price:43783,   cur:'ILS', from:'2025-09', to:''},
+    {sup:'ORSHAR', imp:4, desc:'Port Fees',         price:195.41,  cur:'ILS', from:'2025-09', to:''},
+    {sup:'ORSHAR', imp:5, desc:'Customs Brokerage', price:250,     cur:'ILS', from:'2025-09', to:''},
+  ],
+  imp: [
+    {id:1, code:2, desc:'Customs Duty',      cat:'DUTY',      pat:'דמי\\s*מכס',         pri:10,  notes:''},
+    {id:2, code:3, desc:'VAT on Customs',    cat:'DUTY',      pat:'מע["\']?מ\\s*למכס',  pri:10,  notes:''},
+    {id:3, code:4, desc:'Port Fees',         cat:'PORT',      pat:'מיסי\\s*נמל',         pri:10,  notes:''},
+    {id:4, code:5, desc:'Customs Brokerage', cat:'HANDLING',  pat:'עמילות',              pri:10,  notes:''},
+    {id:5, code:1, desc:'Sea Freight',       cat:'TRANSPORT', pat:'הובל.*|sea freight',  pri:20,  notes:''},
+    {id:6, code:6, desc:'Port Storage',      cat:'PORT',      pat:'אחסנ',                pri:20,  notes:''},
+  ],
+  audit: [
+    {ts:'2025-09-29 10:42', action:'EXPORT',       detail:'חשבונית 558574 – אורשר', status:'ok'},
+    {ts:'2025-09-29 10:41', action:'VALIDATE',      detail:'4/4 שורות תקינות',       status:'ok'},
+    {ts:'2025-09-29 10:40', action:'IMP_MAPPING',   detail:'4 סעיפים מופו',          status:'ok'},
+    {ts:'2025-09-29 09:15', action:'ADD_SUPPLIER',  detail:'ORSHAR נוסף למערכת',    status:'ok'},
+    {ts:'2025-09-29 09:10', action:'IMPORT_IMP',    detail:'6 כללים הוכנסו',         status:'ok'},
+  ],
+  emailOn: false,
+  nextImpId: 7,
+};
+
+// ── NAV ──────────────────────────────────────────────────────────────────────
+const TITLES = {
+  pilot:'📊 פיילוט – עיבוד חשבונית',
+  suppliers:'🏢 ניהול ספקים',
+  prices:'💰 ניהול מחירונים',
+  imp:'🗂️ טבלת IMP',
+  settings:'⚙️ הגדרות',
+  audit:'📜 יומן פעילות'
+};
+
+function nav(id, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  if (el) el.classList.add('active');
+  document.getElementById('topbar-title').textContent = TITLES[id] || id;
+  if (id==='suppliers') renderSuppliers();
+  if (id==='prices')    { populateSupplierSelects(); populatePxSup(); renderPrices(); }
+  if (id==='imp')       renderIMP();
+  if (id==='audit')     renderAudit();
+}
+
+// ── SUPPLIERS ────────────────────────────────────────────────────────────────
+function addSupplier() {
+  const code = document.getElementById('s-code').value.trim().toUpperCase();
+  const name = document.getElementById('s-name').value.trim();
+  if (!code || !name) { alert('קוד ושם ספק הם שדות חובה.'); return; }
+  if (state.suppliers.find(s => s.code===code)) { alert('קוד ספק כבר קיים.'); return; }
+  const ils  = document.getElementById('s-cur-ils').checked;
+  const usd  = document.getElementById('s-cur-usd').checked;
+  if (!ils && !usd) { alert('יש לבחור לפחות מטבע אחד.'); return; }
+  const currencies = [...(ils?['ILS']:[]), ...(usd?['USD']:[])];
+  const pats = document.getElementById('s-patterns').value.trim();
+  state.suppliers.push({code, name, currencies, patterns:pats, type:'custom'});
+  logAction('ADD_SUPPLIER', `${code} – ${name} (${currencies.join('+')})`, 'ok');
+  ['s-code','s-name','s-patterns'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('s-cur-ils').checked=true;
+  document.getElementById('s-cur-usd').checked=false;
+  renderSuppliers();
+  populateSupplierSelects();
+}
+
+function removeSupplier(code) {
+  if (!confirm(`מחק ספק ${code}?`)) return;
+  state.suppliers = state.suppliers.filter(s => s.code!==code);
+  state.prices    = state.prices.filter(p => p.sup!==code);
+  logAction('DELETE_SUPPLIER', code, 'ok');
+  renderSuppliers();
+}
+
+function renderSuppliers() {
+  const tb = document.getElementById('sup-tbody');
+  tb.innerHTML = state.suppliers.map(s => `
+    <tr>
+      <td><strong>${s.code}</strong></td>
+      <td>${s.name}</td>
+      <td>${(s.currencies||[s.currency]).map(c=>`<span class="tag tag-bl" style="margin-left:3px">${c}</span>`).join('')}</td>
+      <td style="font-size:11px;color:var(--gy)">${s.patterns||'—'}</td>
+      <td>${s.type==='builtin'?'<span class="tag tag-gy">מובנה</span>':'<span class="tag tag-or">מותאם</span>'}</td>
+      <td>${s.type==='custom'?`<button class="btn btn-re btn-sm" onclick="removeSupplier('${s.code}')">מחק</button>`:'—'}</td>
+    </tr>`).join('');
+}
+
+// ── PRICES ───────────────────────────────────────────────────────────────────
+function populateSupplierSelects() {
+  ['p-sup','p-filter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const prev = el.value;
+    el.innerHTML = (id==='p-filter'?'<option value="">כל הספקים</option>':'') +
+      state.suppliers.map(s => `<option value="${s.code}">${s.code} – ${s.name}</option>`).join('');
+    if (prev) el.value = prev;
+  });
+  updateImpOpts();
+}
+
+function updateImpOpts() {
+  const el = document.getElementById('p-imp');
+  if (!el) return;
+  el.innerHTML = state.imp.map(r =>
+    `<option value="${r.id}">${r.code} – ${r.desc}</option>`).join('');
+}
+
+function addPrice() {
+  const supCode = document.getElementById('p-sup').value;
+  const impId   = parseInt(document.getElementById('p-imp').value);
+  const impRow  = state.imp.find(r => r.id===impId);
+  const price   = parseFloat(document.getElementById('p-price').value);
+  const cur     = document.getElementById('p-cur').value;
+  const from    = document.getElementById('p-from').value.trim();
+  if (!supCode || !impRow || isNaN(price) || !from) {
+    alert('מלא את כל שדות החובה.'); return;
+  }
+  if (!/^\d{4}-\d{2}$/.test(from)) { alert('פורמט תאריך: YYYY-MM'); return; }
+  const to = document.getElementById('p-to').value.trim();
+  state.prices.push({sup:supCode, imp:impRow.code, desc:impRow.desc, price, cur, from, to});
+  logAction('ADD_PRICE', `${supCode} / IMP ${impRow.code} – ${price} ${cur}`, 'ok');
+  document.getElementById('p-price').value='';
+  document.getElementById('p-from').value='';
+  document.getElementById('p-to').value='';
+  renderPrices();
+}
+
+function removePrice(idx) {
+  state.prices.splice(idx, 1);
+  logAction('DELETE_PRICE', `שורה ${idx+1}`, 'ok');
+  renderPrices();
+}
+
+function renderPrices() {
+  const filter = document.getElementById('p-filter')?.value || '';
+  const tb = document.getElementById('price-tbody');
+  const rows = state.prices.filter(p => !filter || p.sup===filter);
+  tb.innerHTML = rows.length ? rows.map((p, i) => `
+    <tr>
+      <td><span class="tag tag-bl">${p.sup}</span></td>
+      <td><span class="imp-b">IMP ${p.imp}</span></td>
+      <td>${p.desc}</td>
+      <td style="font-weight:700">${p.price.toLocaleString('he-IL',{minimumFractionDigits:2})}</td>
+      <td>${p.cur}</td>
+      <td>${p.from}</td>
+      <td>${p.to||'פתוח'}</td>
+      <td><button class="btn btn-re btn-sm" onclick="removePrice(${state.prices.indexOf(p)})">מחק</button></td>
+    </tr>`).join('')
+  : '<tr><td colspan="8" style="text-align:center;color:var(--gy);padding:20px">אין מחירים</td></tr>';
+}
+
+// ── IMP ──────────────────────────────────────────────────────────────────────
+function addIMP() {
+  const code = parseInt(document.getElementById('i-code').value);
+  const desc = document.getElementById('i-desc').value.trim();
+  const cat  = document.getElementById('i-cat').value;
+  const pat  = document.getElementById('i-pat').value.trim();
+  const pri  = parseInt(document.getElementById('i-pri').value)||100;
+  const notes= document.getElementById('i-notes').value.trim();
+  if (!code || !desc || !pat) { alert('קוד, תיאור ותבנית הם שדות חובה.'); return; }
+  try { new RegExp(pat,'i'); } catch(e) { alert('תבנית Regex לא תקינה: '+e.message); return; }
+  state.imp.push({id:state.nextImpId++, code, desc, cat, pat, pri, notes});
+  state.imp.sort((a,b)=>a.pri-b.pri||a.code-b.code);
+  logAction('ADD_IMP_RULE', `IMP ${code} ← ${pat}`, 'ok');
+  ['i-code','i-desc','i-pat','i-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('i-pri').value=100;
+  renderIMP();
+  updateImpOpts();
+}
+
+function removeIMP(id) {
+  const r = state.imp.find(x=>x.id===id);
+  if (!confirm(`מחק כלל IMP ${r?.code}?`)) return;
+  state.imp = state.imp.filter(x=>x.id!==id);
+  logAction('DELETE_IMP_RULE', `IMP ${r?.code}`, 'ok');
+  renderIMP(); updateImpOpts();
+}
+
+function testIMP() {
+  const txt = document.getElementById('i-test-txt').value.trim();
+  const el  = document.getElementById('i-test-result');
+  if (!txt) { el.innerHTML=''; return; }
+  const match = state.imp.find(r => { try{return new RegExp(r.pat,'i').test(txt)}catch{return false} });
+  el.innerHTML = match
+    ? `<span style="color:var(--gr)">✓ זוהה → <strong>IMP ${match.code}</strong> – ${match.desc} (${match.cat}) | תבנית: <code>${match.pat}</code></span>`
+    : `<span style="color:var(--re)">✗ לא נמצא מיפוי לטקסט זה. הוסף כלל חדש.</span>`;
+}
+
+function renderIMP() {
+  const CAT_COLOR = {TRANSPORT:'tag-bl',DUTY:'tag-or',PORT:'tag-gy',HANDLING:'tag-gr',INSURANCE:'tag-bl',OTHER:'tag-gy'};
+  const tb = document.getElementById('imp-tbody');
+  tb.innerHTML = state.imp.map(r=>`
+    <tr>
+      <td><span class="imp-b">IMP ${r.code}</span></td>
+      <td>${r.desc}</td>
+      <td><span class="tag ${CAT_COLOR[r.cat]||'tag-gy'}">${r.cat}</span></td>
+      <td style="font-family:monospace;font-size:11px">${r.pat}</td>
+      <td style="text-align:center">${r.pri}</td>
+      <td><button class="btn btn-re btn-sm" onclick="removeIMP(${r.id})">מחק</button></td>
+    </tr>`).join('');
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────────────────────
+function toggleEmail() {
+  state.emailOn = !state.emailOn;
+  const tog = document.getElementById('email-tog');
+  const sub = document.getElementById('email-tog-sub');
+  const tag = document.getElementById('email-tog-tag');
+  tog.classList.toggle('on', state.emailOn);
+  if (state.emailOn) {
+    sub.textContent = 'פעיל – המערכת תשלוף מיילים אוטומטית';
+    tag.textContent = 'פעיל'; tag.className='tag tag-gr';
+  } else {
+    sub.textContent = 'כבוי – ניתן להפעיל בעתיד';
+    tag.textContent = 'כבוי'; tag.className='tag tag-gy';
+  }
+  logAction('TOGGLE_EMAIL', state.emailOn?'הופעל':'כובה', 'ok');
+}
+
+function toggleProto() {
+  const isEWS = document.getElementById('st-proto').value==='EWS';
+  const extra = document.getElementById('st-imap-extra');
+  if (extra) extra.style.display = isEWS?'none':'block';
+}
+
+function saveSettings() {
+  logAction('EDIT_SETTINGS', 'הגדרות עודכנו', 'ok');
+  showToast('✅ הגדרות נשמרו בהצלחה');
+}
+
+function testEmail() {
+  const host = document.getElementById('st-host').value.trim();
+  const el   = document.getElementById('st-email-result');
+  if (!host) { el.innerHTML='<div class="alert al-re">נא להזין שרת מייל.</div>'; return; }
+  el.innerHTML='<div class="alert al-or">בודק חיבור...</div>';
+  setTimeout(()=>{
+    el.innerHTML=`<div class="alert al-gr">✓ חיבור הצליח לשרת ${host}:993</div>`;
+    logAction('TEST_EMAIL', host, 'ok');
+  },1500);
+}
+
+// ── AUDIT ────────────────────────────────────────────────────────────────────
+function logAction(action, detail, status) {
+  const now = new Date();
+  const ts = `${now.toLocaleDateString('he-IL')} ${now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}`;
+  state.audit.unshift({ts, action, detail, status});
+}
+
+function renderAudit() {
+  const ACTION_LABEL = {
+    EXPORT:'📤 ייצוא M3', VALIDATE:'✅ בקרת מחירים', IMP_MAPPING:'🗂️ מיפוי IMP',
+    ADD_SUPPLIER:'🏢 ספק נוסף', DELETE_SUPPLIER:'🗑️ ספק נמחק',
+    ADD_PRICE:'💰 מחיר נוסף', DELETE_PRICE:'🗑️ מחיר נמחק',
+    ADD_IMP_RULE:'➕ כלל IMP', DELETE_IMP_RULE:'🗑️ כלל IMP',
+    IMPORT_IMP:'📤 ייבוא IMP', EDIT_SETTINGS:'⚙️ הגדרות', TOGGLE_EMAIL:'📧 מייל',
+    TEST_EMAIL:'🔌 בדיקת מייל',
+  };
+  const tb = document.getElementById('audit-tbody');
+  tb.innerHTML = state.audit.map(r=>`
+    <tr>
+      <td style="font-size:11px;color:var(--gy);white-space:nowrap">${r.ts}</td>
+      <td>${ACTION_LABEL[r.action]||r.action}</td>
+      <td style="font-size:12px;color:var(--t2)">${r.detail}</td>
+      <td>${r.status==='ok'?'<span class="tag tag-gr">✓ הצליח</span>':'<span class="tag tag-re">✗ נכשל</span>'}</td>
+    </tr>`).join('');
+}
+
+// ── TOAST ────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) { t=document.createElement('div'); t.id='toast';
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1E293B;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s';
+    document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity=1;
+  setTimeout(()=>t.style.opacity=0, 2500);
+}
+
+// ── IMP EXCEL IMPORT ─────────────────────────────────────────────────────────
+let pendingImpRows = [];
+
+function handleImpExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('imp-file-name').textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb  = XLSX.read(e.target.result, {type:'array'});
+      const ws  = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, {defval:''});
+
+      if (!raw.length) { alert('הקובץ ריק.'); return; }
+
+      // Normalize column names
+      const normalize = s => String(s).trim().toLowerCase().replace(/\s+/g,'_');
+      const rows = raw.map(r => {
+        const n = {};
+        Object.keys(r).forEach(k => n[normalize(k)] = r[k]);
+        return n;
+      });
+
+      // Validate required columns
+      const required = ['imp_code','imp_description','keyword_pattern'];
+      const cols = Object.keys(rows[0]);
+      const missing = required.filter(c => !cols.includes(c));
+      if (missing.length) {
+        alert(`חסרות עמודות: ${missing.join(', ')}\nעמודות בקובץ: ${cols.join(', ')}`);
+        return;
+      }
+
+      pendingImpRows = rows;
+
+      // Preview table
+      const previewCols = ['imp_code','imp_description','keyword_pattern','category','priority'];
+      const tbl = document.getElementById('imp-preview-table');
+      tbl.innerHTML =
+        '<thead><tr>' + previewCols.map(c=>`<th>${c}</th>`).join('') + '</tr></thead>' +
+        '<tbody>' + rows.slice(0,8).map(r =>
+          '<tr>' + previewCols.map(c=>`<td>${r[c]||''}</td>`).join('') + '</tr>'
+        ).join('') +
+        (rows.length>8?`<tr><td colspan="${previewCols.length}" style="color:var(--gy);text-align:center">...ועוד ${rows.length-8} שורות</td></tr>`:'') +
+        '</tbody>';
+
+      document.getElementById('imp-preview-count').textContent = rows.length;
+      document.getElementById('imp-excel-preview').classList.remove('hidden');
+      document.getElementById('imp-import-result').textContent = '';
+    } catch(err) {
+      alert('שגיאה בקריאת הקובץ: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function importImpFromExcel() {
+  if (!pendingImpRows.length) return;
+  let imported=0, skipped=0, errors=[];
+
+  pendingImpRows.forEach((r,i) => {
+    const code = parseInt(r['imp_code']);
+    const desc = String(r['imp_description']||'').trim();
+    const pat  = String(r['keyword_pattern']||'').trim();
+    if (!code || !desc || !pat) { skipped++; return; }
+    try { new RegExp(pat,'i'); } catch(e) { errors.push(`שורה ${i+2}: Regex לא תקין`); skipped++; return; }
+    state.imp.push({
+      id: state.nextImpId++,
+      code,
+      desc,
+      cat:  String(r['category']||'OTHER').trim().toUpperCase(),
+      pat,
+      pri:  parseInt(r['priority'])||100,
+      notes:String(r['notes']||'').trim(),
+    });
+    imported++;
+  });
+
+  state.imp.sort((a,b)=>a.pri-b.pri||a.code-b.code);
+  logAction('IMPORT_IMP', `יובאו ${imported} כללים${skipped?`, דולגו ${skipped}`:''}`,'ok');
+  updateImpOpts();
+  renderIMP();
+
+  const res = document.getElementById('imp-import-result');
+  res.innerHTML = `<span style="color:var(--gr)">✅ יובאו ${imported} כללים</span>` +
+    (skipped?` <span style="color:var(--or)">· ${skipped} דולגו</span>`:'') +
+    (errors.length?`<br><span style="color:var(--re)">${errors.join(' | ')}</span>`:'');
+
+  pendingImpRows=[];
+  showToast(`✅ ${imported} כללי IMP יובאו בהצלחה`);
+}
+
+function clearImpExcel() {
+  pendingImpRows=[];
+  document.getElementById('imp-excel-preview').classList.add('hidden');
+  document.getElementById('imp-excel-input').value='';
+  document.getElementById('imp-file-name').textContent='';
+}
+
+function downloadImpTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['imp_code','imp_description','keyword_pattern','category','priority','notes'],
+    [2,'Customs Duty','דמי\\s*מכס|customs duty','DUTY',10,''],
+    [3,'VAT on Customs','מע"מ\\s*למכס','DUTY',10,''],
+    [4,'Port Fees','מיסי\\s*נמל|port fees','PORT',10,''],
+    [5,'Customs Brokerage','עמילות','HANDLING',10,''],
+    [1,'Sea Freight','הובל.*|sea freight','TRANSPORT',20,''],
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'IMP_MAP');
+  XLSX.writeFile(wb, 'IMP_Template.xlsx');
+}
+
+
+const STEPS=[
+  {id:'ps1',msg:'קורא את קובץ ה-PDF...',dur:900},
+  {id:'ps2',msg:'מזהה ספק: אורשר שילוח בין לאומי בע"מ',dur:700},
+  {id:'ps3',msg:'ממפה 4 סעיפים לקודי IMP...',dur:1000},
+  {id:'ps4',msg:'מבצע בקרת מחירים מול מחירון אורשר...',dur:900},
+  {id:'ps5',msg:'מכין קובץ APS450MI ל-M3...',dur:700},
+];
+const JSON_LINES=[
+  '{','  <span class="jk">"program"</span>: <span class="js">"APS450MI"</span>,',
+  '  <span class="jk">"transaction"</span>: <span class="js">"AddHead"</span>,',
+  '  <span class="jk">"record"</span>: {',
+  '    <span class="jk">"SINO"</span>: <span class="js">"558574"</span>,',
+  '    <span class="jk">"SUNO"</span>: <span class="js">"10042"</span>,',
+  '    <span class="jk">"IVDT"</span>: <span class="js">"20250929"</span>,',
+  '    <span class="jk">"IVAM"</span>: <span class="jn">44362.41</span>',
+  '  }','}'
+];
+let running=false;
+function setPS(id,state){document.getElementById(id).className='ps '+state;}
+function runPipeline(){
+  if(running)return; running=true;
+  document.getElementById('run-btn').disabled=true;
+  document.getElementById('spin').style.display='inline-block';
+  document.getElementById('run-lbl').textContent='מעבד...';
+  ['p-imp','p-price','p-m3','p-final'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  STEPS.forEach(s=>setPS(s.id,'pending'));
+  let delay=0;
+  STEPS.forEach((step,i)=>{
+    setTimeout(()=>{
+      if(i>0)setPS(STEPS[i-1].id,'done');
+      setPS(step.id,'active');
+      document.getElementById('prog-msg').textContent=step.msg;
+      document.getElementById('prog').style.width=((i+1)/STEPS.length*100)+'%';
+      if(i===2)setTimeout(()=>showPanel('p-imp'),200);
+      if(i===3)setTimeout(()=>showPanel('p-price'),200);
+      if(i===4){
+        setTimeout(()=>{showPanel('p-m3');typeJSON();},200);
+        setTimeout(()=>{
+          setPS(step.id,'done');
+          document.getElementById('prog').style.width='100%';
+          document.getElementById('prog-msg').textContent='✅ עיבוד הושלם בהצלחה!';
+          document.getElementById('spin').style.display='none';
+          document.getElementById('run-lbl').textContent='✓ הושלם';
+          document.getElementById('rst-btn').classList.remove('hidden');
+          showPanel('p-final');
+          logAction('EXPORT','חשבונית 558574 – אורשר','ok');
+          running=false;
+        },step.dur+200);
+      }
+    },delay);
+    delay+=step.dur;
+  });
+}
+function showPanel(id){
+  const el=document.getElementById(id);
+  el.classList.remove('hidden');
+  el.style.opacity=0;
+  requestAnimationFrame(()=>{el.style.transition='opacity .4s';el.style.opacity=1;});
+}
+function typeJSON(){
+  const box=document.getElementById('json-out'); box.innerHTML='';
+  JSON_LINES.forEach((l,i)=>setTimeout(()=>{box.innerHTML+=l+'\n';box.scrollTop=9999;},i*120));
+}
+function resetPipeline(){
+  running=false;
+  STEPS.forEach(s=>setPS(s.id,'pending'));
+  document.getElementById('prog').style.width='0%';
+  document.getElementById('prog-msg').textContent='';
+  ['p-imp','p-price','p-m3','p-final'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('run-btn').disabled=false;
+  document.getElementById('spin').style.display='none';
+  document.getElementById('run-lbl').textContent='▶ הרץ עיבוד';
+  document.getElementById('rst-btn').classList.add('hidden');
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+renderSuppliers();
+populateSupplierSelects();
+renderIMP();
+renderPrices();
+renderAudit();
+</script>
+</body>
+</html>
