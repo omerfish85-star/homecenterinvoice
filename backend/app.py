@@ -32,6 +32,11 @@ from processor import (
     generate_m3_export,
     m3_export_to_excel,
     mark_invoices_exported,
+    # Phase 5 — Invoice management
+    update_invoice_status,
+    approve_invoice_line,
+    add_invoice,
+    import_invoices_excel,
 )
 
 app = Flask(__name__)
@@ -79,6 +84,53 @@ def get_invoice(invoice_id: str):
     if detail is None:
         return jsonify({"error": f"Invoice {invoice_id!r} not found"}), 404
     return jsonify(detail)
+
+
+@app.post("/api/invoices")
+def create_invoice():
+    data = request.get_json(force=True)
+    record, err = add_invoice(_dfs, data)
+    if err:
+        return jsonify({"error": err}), 400
+    return jsonify({"ok": True, "invoice": record}), 201
+
+
+@app.post("/api/invoices/import")
+def import_invoices():
+    """Multipart file upload: field name = 'file'. Accepts .xlsx / .csv"""
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded (field name: 'file')"}), 400
+    f      = request.files["file"]
+    result = import_invoices_excel(_dfs, f.read())
+    status_code = 200 if not result["errors"] else 207
+    return jsonify(result), status_code
+
+
+@app.patch("/api/invoices/<invoice_id>")
+def update_invoice(invoice_id: str):
+    """Update invoice status. Body: {"status": "approved"}"""
+    data       = request.get_json(force=True)
+    new_status = data.get("status", "").strip()
+    user       = data.get("user", "frontend")
+    ok, err = update_invoice_status(_dfs, invoice_id, new_status, user=user)
+    if not ok:
+        return jsonify({"error": err}), 400
+    return jsonify({"ok": True, "invoice_id": invoice_id, "status": new_status})
+
+
+@app.patch("/api/invoices/<invoice_id>/lines/<int:line_no>")
+def approve_line(invoice_id: str, line_no: int):
+    """Approve a single invoice line. Body: {"user": "dana.levi"}"""
+    data = request.get_json(force=True) if request.data else {}
+    user = data.get("user", "frontend") if data else "frontend"
+    ok, err = approve_invoice_line(_dfs, invoice_id, line_no, user=user)
+    if not ok:
+        return jsonify({"error": err}), 400
+    # Return updated invoice status
+    detail = invoice_detail(_dfs, invoice_id)
+    inv_status = detail.get("status") if detail else None
+    return jsonify({"ok": True, "invoice_id": invoice_id,
+                    "line_no": line_no, "invoice_status": inv_status})
 
 
 @app.get("/api/invoices/<invoice_id>/price-check")

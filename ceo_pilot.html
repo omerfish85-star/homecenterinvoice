@@ -233,6 +233,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
   <div class="sb-item" onclick="nav('pilot',this)"><span class="icon">📊</span>פיילוט – דוגמה</div>
 
   <div class="sb-section">ניהול</div>
+  <div class="sb-item" onclick="nav('invoices',this)" id="nav-invoices"><span class="icon">📥</span>ייבוא חשבוניות</div>
   <div class="sb-item" onclick="nav('suppliers',this)"><span class="icon">🏢</span>ספקים</div>
   <div class="sb-item" onclick="nav('prices',this)"><span class="icon">💰</span>מחירונים</div>
   <div class="sb-item" onclick="nav('imp',this)"><span class="icon">🗂️</span>טבלת IMP</div>
@@ -484,6 +485,88 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
     </div>
 
     <!-- ══════════════════════════════════════════════════════ -->
+    <!-- VIEW: INVOICES (Phase 5 – Invoice import/creation)   -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="view fade-in" id="view-invoices">
+      <div class="section-lbl">ייבוא חשבוניות חדשות</div>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:16px">
+        ייבא חשבוניות חדשות למערכת – דרך Excel או הזנה ידנית. לאחר הייבוא תוכל לעבד ולשלוח ל-M3.
+      </p>
+
+      <!-- Excel import -->
+      <div class="card">
+        <div class="card-title">📤 ייבוא מ-Excel</div>
+        <div class="alert al-bl" style="margin-bottom:12px">
+          <strong>גיליון 1 – חשבוניות (עמודות חובה):</strong>
+          <span style="font-family:monospace;font-size:11px;margin-right:6px">invoice_id | vendor | date | month | currency | total_amount</span>
+          <br>
+          <strong>גיליון "Lines" (אופציונלי):</strong>
+          <span style="font-family:monospace;font-size:11px;margin-right:6px">invoice_id | line_no | desc_raw | imp_code | billed_amount | agreed_price</span>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:8px;padding:9px 16px;border:1px dashed var(--or);border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:var(--or);background:var(--orl)">
+            📎 בחר קובץ Excel
+            <input type="file" id="inv-excel-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleInvoiceExcel(this)">
+          </label>
+          <button class="btn btn-out btn-sm" onclick="downloadInvoiceTemplate()">⬇ הורד תבנית Excel</button>
+          <span id="inv-file-name" style="font-size:12px;color:var(--gy)"></span>
+        </div>
+        <div id="inv-excel-preview" class="hidden" style="margin-top:14px">
+          <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px">תצוגה מקדימה:</div>
+          <div style="overflow-x:auto">
+            <table class="tbl" id="inv-preview-table" style="font-size:12px"></table>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+            <button class="btn btn-or" onclick="importInvoicesFromExcel()">✅ ייבא <span id="inv-preview-count"></span> חשבוניות</button>
+            <button class="btn btn-out btn-sm" onclick="clearInvoiceExcel()">ביטול</button>
+            <div id="inv-import-result" style="font-size:12px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manual entry -->
+      <div class="card">
+        <div class="card-title">✍️ הזנה ידנית</div>
+        <div class="g2" style="margin-bottom:12px">
+          <div>
+            <div class="fg"><label>מזהה חשבונית *</label><input id="ni-id" placeholder="VENDOR-12345"></div>
+            <div class="fg"><label>ספק *</label>
+              <select id="ni-vendor">
+                <option value="">-- בחר ספק --</option>
+              </select>
+            </div>
+            <div class="fg"><label>תאריך חשבונית *</label><input id="ni-date" placeholder="DD/MM/YYYY" type="text"></div>
+            <div class="fg"><label>חודש (YYYY-MM) *</label><input id="ni-month" placeholder="2025-09"></div>
+          </div>
+          <div>
+            <div class="fg"><label>מטבע</label>
+              <select id="ni-cur"><option value="ILS">ILS ₪</option><option value="USD">USD $</option></select>
+            </div>
+            <div class="fg"><label>סכום כולל *</label><input id="ni-total" type="number" placeholder="0.00" min="0" step="0.01"></div>
+            <div class="fg"><label>מע"מ</label><input id="ni-vat" type="number" placeholder="0.00" min="0" step="0.01" value="0"></div>
+            <div class="fg"><label>מספר הזמנה (PO)</label><input id="ni-po" placeholder="PO-2025-0001"></div>
+          </div>
+        </div>
+
+        <!-- Invoice lines -->
+        <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px">שורות חשבונית:</div>
+        <div id="ni-lines-wrap">
+          <div style="display:grid;grid-template-columns:2.5fr 1.2fr 1fr 1fr 30px;gap:6px;padding:0 0 6px;font-size:10px;color:var(--gy);font-weight:700">
+            <div>תיאור</div><div>קוד IMP</div><div>סכום חויב</div><div>מחיר מוסכם</div><div></div>
+          </div>
+          <div id="ni-lines-rows"></div>
+          <button class="btn btn-out btn-sm" onclick="niAddLine()" style="margin-top:6px">➕ הוסף שורה</button>
+        </div>
+
+        <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
+          <button class="btn btn-or" onclick="saveManualInvoice()">💾 שמור חשבונית</button>
+          <button class="btn btn-out btn-sm" onclick="clearManualInvoice()">ניקוי</button>
+          <div id="ni-result" style="font-size:12px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
     <!-- VIEW: SUPPLIERS                                       -->
     <!-- ══════════════════════════════════════════════════════ -->
     <div class="view" id="view-suppliers">
@@ -494,29 +577,29 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
       <p style="font-size:13px;color:var(--t2);margin-bottom:16px">כל ספק שמוסף כאן יוכל לקבל מחירון ולהיות מזוהה אוטומטית ממייל.</p>
 
       <div class="card">
-        <div class="card-title">📤 ייבוא מ-Excel</div>
+        <div class="card-title">📤 ייבוא ספקים מ-Excel</div>
         <div class="alert al-bl" style="margin-bottom:12px">
           <strong>פורמט נדרש – עמודות חובה:</strong>
-          <span style="font-family:monospace;font-size:11px;margin-right:6px">imp_code | imp_description | keyword_pattern</span>
-          <br>עמודות רשות: <span style="font-family:monospace;font-size:11px">category | priority | notes</span>
+          <span style="font-family:monospace;font-size:11px;margin-right:6px">code | name</span>
+          <br>עמודות רשות: <span style="font-family:monospace;font-size:11px">currencies | email_patterns | type</span>
         </div>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
           <label style="display:flex;align-items:center;gap:8px;padding:9px 16px;border:1px dashed var(--or);border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:var(--or);background:var(--orl)">
             📎 בחר קובץ Excel
-            <input type="file" id="imp-excel-input" accept=".xlsx,.xls" style="display:none" onchange="handleImpExcel(this)">
+            <input type="file" id="sup-excel-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleSupplierExcel(this)">
           </label>
-          <button class="btn btn-out btn-sm" onclick="downloadImpTemplate()">⬇ הורד תבנית Excel</button>
-          <span id="imp-file-name" style="font-size:12px;color:var(--gy)"></span>
+          <button class="btn btn-out btn-sm" onclick="downloadSupplierTemplate()">⬇ הורד תבנית Excel</button>
+          <span id="sup-file-name" style="font-size:12px;color:var(--gy)"></span>
         </div>
-        <div id="imp-excel-preview" class="hidden" style="margin-top:14px">
+        <div id="sup-excel-preview" class="hidden" style="margin-top:14px">
           <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px">תצוגה מקדימה:</div>
           <div style="overflow-x:auto">
-            <table class="tbl" id="imp-preview-table" style="font-size:12px"></table>
+            <table class="tbl" id="sup-preview-table" style="font-size:12px"></table>
           </div>
           <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
-            <button class="btn btn-or" onclick="importImpFromExcel()">✅ ייבא <span id="imp-preview-count"></span> כללים</button>
-            <button class="btn btn-out btn-sm" onclick="clearImpExcel()">ביטול</button>
-            <div id="imp-import-result" style="font-size:12px"></div>
+            <button class="btn btn-or" onclick="importSuppliersFromExcel()">✅ ייבא <span id="sup-preview-count"></span> ספקים</button>
+            <button class="btn btn-out btn-sm" onclick="clearSupplierExcel()">ביטול</button>
+            <div id="sup-import-result" style="font-size:12px"></div>
           </div>
         </div>
       </div>
@@ -628,8 +711,40 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FAFB;color:var(--tx);
     <!-- VIEW: IMP                                             -->
     <!-- ══════════════════════════════════════════════════════ -->
     <div class="view" id="view-imp">
-      <div class="section-lbl">טבלת IMP</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="section-lbl" style="margin-bottom:0">טבלת IMP</div>
+        <button id="imp-sync-btn" class="btn btn-out btn-sm" onclick="syncImpFromAPI(true)">↻ סנכרן עם API</button>
+      </div>
       <p style="font-size:13px;color:var(--t2);margin-bottom:16px">כל כלל מגדיר: "אם הסעיף בחשבונית מכיל את הטקסט הזה ← שייך ל-IMP X".</p>
+
+      <!-- IMP Excel import -->
+      <div class="card">
+        <div class="card-title">📤 ייבוא כללי IMP מ-Excel</div>
+        <div class="alert al-bl" style="margin-bottom:12px">
+          <strong>פורמט נדרש – עמודות חובה:</strong>
+          <span style="font-family:monospace;font-size:11px;margin-right:6px">imp_code | imp_description | keyword_pattern</span>
+          <br>עמודות רשות: <span style="font-family:monospace;font-size:11px">category | priority | notes</span>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:8px;padding:9px 16px;border:1px dashed var(--or);border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:var(--or);background:var(--orl)">
+            📎 בחר קובץ Excel
+            <input type="file" id="imp-excel-input" accept=".xlsx,.xls" style="display:none" onchange="handleImpExcel(this)">
+          </label>
+          <button class="btn btn-out btn-sm" onclick="downloadImpTemplate()">⬇ הורד תבנית Excel</button>
+          <span id="imp-file-name" style="font-size:12px;color:var(--gy)"></span>
+        </div>
+        <div id="imp-excel-preview" class="hidden" style="margin-top:14px">
+          <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px">תצוגה מקדימה:</div>
+          <div style="overflow-x:auto">
+            <table class="tbl" id="imp-preview-table" style="font-size:12px"></table>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+            <button class="btn btn-or" onclick="importImpFromExcel()">✅ ייבא <span id="imp-preview-count"></span> כללים</button>
+            <button class="btn btn-out btn-sm" onclick="clearImpExcel()">ביטול</button>
+            <div id="imp-import-result" style="font-size:12px"></div>
+          </div>
+        </div>
+      </div>
 
       <div class="card">
         <div class="card-title">➕ הוספת כלל מיפוי</div>
@@ -879,6 +994,7 @@ const TITLES = {
   dashboard:'▣ לוח בקרה',
   pipeline: '⟳ Pipeline – עיבוד חשבוניות',
   pilot:    '📊 פיילוט – עיבוד חשבונית (דוגמה)',
+  invoices: '📥 ייבוא חשבוניות חדשות',
   suppliers:'🏢 ניהול ספקים',
   prices:   '💰 ניהול מחירונים',
   imp:      '🗂️ טבלת IMP',
@@ -899,9 +1015,10 @@ function nav(id, el) {
   document.getElementById('topbar-title').textContent = TITLES[id] || id;
   if (id==='dashboard') loadDashboard();
   if (id==='pipeline')  loadPipeline();
-  if (id==='suppliers') renderSuppliers();
+  if (id==='invoices')  initInvoiceImport();
+  if (id==='suppliers') { renderSuppliers(); }
   if (id==='prices')    { populateSupplierSelects(); populatePxSup(); renderPrices(); }
-  if (id==='imp')       renderIMP();
+  if (id==='imp')       { renderIMP(); syncImpFromAPI(); }
   if (id==='audit')     loadAuditFromAPI();
   if (id==='m3export')  loadM3Export();
 }
@@ -2083,16 +2200,6 @@ function renderPipelineDetail(panel, inv, pc) {
     </div>`;
 }
 
-function approveLinePI(invoiceId, lineNo, btn) {
-  btn.textContent = '...';
-  btn.disabled = true;
-  setTimeout(() => {
-    btn.closest('tr').className = 'pc-row-ok';
-    btn.parentElement.innerHTML = '<span class="tag tag-gr" style="font-size:10px">✓ אושר</span>';
-    logAction('APPROVE_LINE', `${invoiceId} · שורה ${lineNo}`, 'ok');
-  }, 800);
-}
-
 // ── API BRIDGE ───────────────────────────────────────────────────────────────
 // When opened as a local file (file://) point at the dev server.
 // When served by Flask in production, use a same-origin relative path.
@@ -2169,6 +2276,352 @@ async function pingAPI() {
       <button onclick="document.getElementById('api-banner').style.display='none'"
         style="float:left;background:none;border:none;cursor:pointer;font-size:14px;color:inherit;opacity:.6;line-height:1">✕</button>
     `);
+  }
+}
+
+// ── IMP SYNC FROM API ────────────────────────────────────────────────────────
+async function syncImpFromAPI(force = false) {
+  const btn = document.getElementById('imp-sync-btn');
+  if (btn) { btn.textContent = '↻ סורק...'; btn.disabled = true; }
+  try {
+    const res  = await fetch(`${API_BASE}/imp`, { signal: AbortSignal.timeout(5000) });
+    const rows = await res.json();
+    // Map API imp_mapping format → local state.imp format
+    state.imp = rows.map((r, idx) => ({
+      id:    idx + 1,
+      code:  r.imp_code || r.code || '',
+      desc:  r.imp_name || r.desc_he || r.desc || '',
+      cat:   r.category || 'OTHER',
+      pat:   r.keyword_pattern || r.pat || '',
+      pri:   parseInt(r.priority || r.pri || 100),
+      notes: r.notes || '',
+    }));
+    state.nextImpId = rows.length + 1;
+    renderIMP();
+    updateImpOpts();
+    if (force) showToast(`✅ ${rows.length} קודי IMP נטענו מה-API`);
+  } catch {
+    if (force) showToast('⚠ לא ניתן לטעון IMP מה-API – מוצגים נתונים מקומיים');
+  } finally {
+    if (btn) { btn.textContent = '↻ סנכרן עם API'; btn.disabled = false; }
+  }
+}
+
+// ── SUPPLIER EXCEL IMPORT ─────────────────────────────────────────────────────
+let pendingSupRows = [];
+
+function handleSupplierExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('sup-file-name').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb  = XLSX.read(e.target.result, {type:'array'});
+      const ws  = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if (!raw.length) { alert('הקובץ ריק.'); return; }
+      const normalize = s => String(s).trim().toLowerCase().replace(/\s+/g,'_');
+      const rows = raw.map(r => { const n={}; Object.keys(r).forEach(k=>n[normalize(k)]=r[k]); return n; });
+      const required = ['code','name'];
+      const missing  = required.filter(c => !Object.keys(rows[0]).includes(c));
+      if (missing.length) { alert(`חסרות עמודות: ${missing.join(', ')}`); return; }
+      pendingSupRows = rows;
+      const previewCols = ['code','name','currencies','email_patterns'];
+      const tbl = document.getElementById('sup-preview-table');
+      tbl.innerHTML =
+        '<thead><tr>'+previewCols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
+        '<tbody>'+rows.slice(0,8).map(r=>'<tr>'+previewCols.map(c=>`<td>${r[c]||''}</td>`).join('')+'</tr>').join('')+
+        (rows.length>8?`<tr><td colspan="${previewCols.length}" style="color:var(--gy);text-align:center">...ועוד ${rows.length-8}</td></tr>`:'')+
+        '</tbody>';
+      document.getElementById('sup-preview-count').textContent = rows.length;
+      document.getElementById('sup-excel-preview').classList.remove('hidden');
+      document.getElementById('sup-import-result').textContent = '';
+    } catch(err) { alert('שגיאה: '+err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function importSuppliersFromExcel() {
+  if (!pendingSupRows.length) return;
+  const formData = new FormData();
+  const aoa = [['code','name','currencies','email_patterns','type']].concat(
+    pendingSupRows.map(r=>[r.code,r.name,r.currencies||'ILS',r.email_patterns||'',r.type||'custom'])
+  );
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+  const xlsxBytes = XLSX.write(wb, {bookType:'xlsx',type:'array'});
+  formData.append('file', new Blob([xlsxBytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'suppliers.xlsx');
+  try {
+    const res  = await fetch(`${API_BASE}/suppliers/import`, {method:'POST', body:formData, signal:AbortSignal.timeout(8000)});
+    const data = await res.json();
+    const imported = data.imported || 0;
+    // Also add locally
+    pendingSupRows.forEach(r => {
+      if (!state.suppliers.find(s => s.code === String(r.code).toUpperCase())) {
+        state.suppliers.push({
+          code: String(r.code).toUpperCase(),
+          name: r.name,
+          currencies: String(r.currencies||'ILS').split('|'),
+          patterns: r.email_patterns||'',
+          type: r.type||'custom',
+        });
+      }
+    });
+    renderSuppliers(); populateSupplierSelects(); populatePxSup();
+    logAction('IMPORT_SUPPLIERS', `${imported} ספקים יובאו`, 'ok');
+    document.getElementById('sup-import-result').innerHTML = `<span style="color:var(--gr)">✅ יובאו ${imported} ספקים</span>`+(data.errors?.length?` <span style="color:var(--re)">${data.errors.slice(0,2).join(' | ')}</span>`:'');
+    pendingSupRows=[];
+    showToast(`✅ ${imported} ספקים יובאו בהצלחה`);
+  } catch {
+    // Fallback: local only
+    let added=0;
+    pendingSupRows.forEach(r => {
+      if (!state.suppliers.find(s => s.code === String(r.code).toUpperCase())) {
+        state.suppliers.push({
+          code: String(r.code).toUpperCase(), name: r.name,
+          currencies: String(r.currencies||'ILS').split('|'),
+          patterns: r.email_patterns||'', type: r.type||'custom',
+        });
+        added++;
+      }
+    });
+    renderSuppliers(); populateSupplierSelects();
+    document.getElementById('sup-import-result').innerHTML = `<span style="color:var(--or)">⚠ יובאו מקומית בלבד (${added} ספקים)</span>`;
+    pendingSupRows=[];
+  }
+}
+
+function clearSupplierExcel() {
+  pendingSupRows=[];
+  document.getElementById('sup-excel-preview').classList.add('hidden');
+  document.getElementById('sup-excel-input').value='';
+  document.getElementById('sup-file-name').textContent='';
+}
+
+function downloadSupplierTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['code','name','currencies','email_patterns','type'],
+    ['CARGO360','קרגו 360 בע"מ','ILS','@cargo360.co.il,cargo360','custom'],
+    ['MAERSK','Maersk Israel','ILS|USD','@maersk.com,maersk','custom'],
+  ]);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Suppliers');
+  XLSX.writeFile(wb,'Suppliers_Template.xlsx');
+}
+
+// ── INVOICE IMPORT / MANUAL CREATION (Phase 5) ───────────────────────────────
+let _pendingInvRows = [];
+let _niLineCount    = 0;
+
+function initInvoiceImport() {
+  // Populate vendor selector from state.suppliers
+  const sel = document.getElementById('ni-vendor');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- בחר ספק --</option>' +
+    state.suppliers.map(s => `<option value="${s.name}">${s.code} – ${s.name}</option>`).join('');
+  if (prev) sel.value = prev;
+  if (!document.getElementById('ni-lines-rows').children.length) niAddLine();
+}
+
+function niAddLine() {
+  _niLineCount++;
+  const wrap = document.getElementById('ni-lines-rows');
+  const row  = document.createElement('div');
+  row.id = `ni-line-${_niLineCount}`;
+  row.style.cssText = 'display:grid;grid-template-columns:2.5fr 1.2fr 1fr 1fr 30px;gap:6px;margin-bottom:6px;align-items:center';
+  const impOpts = state.imp.map(r => `<option value="${r.code}">${r.code} – ${r.desc}</option>`).join('');
+  row.innerHTML = `
+    <input placeholder="תיאור שורה" style="padding:6px 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px">
+    <select style="padding:6px 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px">
+      <option value="">-- IMP --</option>${impOpts}
+    </select>
+    <input type="number" placeholder="סכום חויב" min="0" step="0.01" style="padding:6px 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px">
+    <input type="number" placeholder="מוסכם" min="0" step="0.01" style="padding:6px 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px">
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--re);font-size:16px;padding:0">✕</button>
+  `;
+  wrap.appendChild(row);
+}
+
+async function saveManualInvoice() {
+  const invId  = document.getElementById('ni-id').value.trim();
+  const vendor = document.getElementById('ni-vendor').value;
+  const date   = document.getElementById('ni-date').value.trim();
+  const month  = document.getElementById('ni-month').value.trim();
+  const cur    = document.getElementById('ni-cur').value;
+  const total  = parseFloat(document.getElementById('ni-total').value);
+  const vat    = parseFloat(document.getElementById('ni-vat').value||'0');
+  const po     = document.getElementById('ni-po').value.trim();
+
+  if (!invId||!vendor||!date||!month||isNaN(total)) {
+    alert('נא למלא: מזהה חשבונית, ספק, תאריך, חודש וסכום כולל.');
+    return;
+  }
+  if (!/^\d{4}-\d{2}$/.test(month)) { alert('פורמט חודש: YYYY-MM'); return; }
+
+  // Collect lines
+  const linesWrap = document.getElementById('ni-lines-rows');
+  const lines = [];
+  let ln = 1;
+  for (const row of linesWrap.children) {
+    const inputs  = row.querySelectorAll('input,select');
+    const desc    = inputs[0].value.trim();
+    const imp     = inputs[1].value;
+    const billed  = parseFloat(inputs[2].value||'0');
+    const agreed  = inputs[3].value ? parseFloat(inputs[3].value) : null;
+    if (!desc) continue;
+    lines.push({ line_no:ln++, desc_raw:desc, imp_code:imp, billed_amount:billed, agreed_price:agreed });
+  }
+
+  const payload = { invoice_id:invId, vendor, date, month, currency:cur,
+                    total_amount:total, vat_amount:vat, po, status:'pending', lines };
+
+  const resultEl = document.getElementById('ni-result');
+  resultEl.innerHTML = '<span style="color:var(--gy)">שומר...</span>';
+
+  try {
+    const res  = await fetch(`${API_BASE}/invoices`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload), signal: AbortSignal.timeout(8000),
+    });
+    const data = await res.json();
+    if (data.error) { resultEl.innerHTML=`<span style="color:var(--re)">⚠ ${data.error}</span>`; return; }
+    resultEl.innerHTML = `<span style="color:var(--gr)">✅ חשבונית ${invId} נשמרה בהצלחה</span>`;
+    logAction('ADD_INVOICE', `${invId} – ${vendor} (${lines.length} שורות)`, 'ok');
+    showToast(`✅ חשבונית ${invId} נוספה`);
+    // Refresh caches
+    _dashInvoices=[]; _pipeInvoices=[];
+    clearManualInvoice();
+  } catch {
+    resultEl.innerHTML = `<span style="color:var(--or)">⚠ API לא זמין – החשבונית לא נשמרה</span>`;
+  }
+}
+
+function clearManualInvoice() {
+  ['ni-id','ni-date','ni-month','ni-po'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('ni-total').value='';
+  document.getElementById('ni-vat').value='0';
+  document.getElementById('ni-lines-rows').innerHTML='';
+  _niLineCount=0;
+  niAddLine();
+  document.getElementById('ni-result').textContent='';
+}
+
+function handleInvoiceExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('inv-file-name').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb  = XLSX.read(e.target.result, {type:'array'});
+      const ws  = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if (!raw.length) { alert('הקובץ ריק.'); return; }
+      const normalize = s => String(s).trim().toLowerCase().replace(/\s+/g,'_');
+      const rows = raw.map(r => { const n={}; Object.keys(r).forEach(k=>n[normalize(k)]=r[k]); return n; });
+      const required = ['invoice_id','vendor','date','month','currency','total_amount'];
+      const missing  = required.filter(c => !Object.keys(rows[0]).includes(c));
+      if (missing.length) { alert(`חסרות עמודות: ${missing.join(', ')}`); return; }
+      _pendingInvRows = rows;
+      const previewCols = ['invoice_id','vendor','date','month','currency','total_amount','status'];
+      const tbl = document.getElementById('inv-preview-table');
+      tbl.innerHTML =
+        '<thead><tr>'+previewCols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>'+
+        '<tbody>'+rows.slice(0,8).map(r=>'<tr>'+previewCols.map(c=>`<td>${r[c]||''}</td>`).join('')+'</tr>').join('')+
+        (rows.length>8?`<tr><td colspan="${previewCols.length}" style="color:var(--gy);text-align:center">...ועוד ${rows.length-8}</td></tr>`:'')+
+        '</tbody>';
+      document.getElementById('inv-preview-count').textContent = rows.length;
+      document.getElementById('inv-excel-preview').classList.remove('hidden');
+      document.getElementById('inv-import-result').textContent='';
+    } catch(err) { alert('שגיאה: '+err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function importInvoicesFromExcel() {
+  if (!_pendingInvRows.length) return;
+  const formData = new FormData();
+  // Rebuild xlsx from rows
+  const cols = Object.keys(_pendingInvRows[0]);
+  const aoa  = [cols].concat(_pendingInvRows.map(r => cols.map(c => r[c]||'')));
+  const ws   = XLSX.utils.aoa_to_sheet(aoa);
+  const wb   = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+  const bytes = XLSX.write(wb, {bookType:'xlsx',type:'array'});
+  formData.append('file', new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'invoices.xlsx');
+  const resultEl = document.getElementById('inv-import-result');
+  resultEl.innerHTML = '<span style="color:var(--gy)">מייבא...</span>';
+  try {
+    const res  = await fetch(`${API_BASE}/invoices/import`, {method:'POST', body:formData, signal:AbortSignal.timeout(10000)});
+    const data = await res.json();
+    const imported = data.imported||0;
+    logAction('IMPORT_INVOICES', `${imported} חשבוניות יובאו`, 'ok');
+    resultEl.innerHTML = `<span style="color:var(--gr)">✅ יובאו ${imported} חשבוניות</span>`+(data.errors?.length?` <span style="color:var(--re)">${data.errors.slice(0,2).join(' | ')}</span>`:'');
+    _pendingInvRows=[]; _dashInvoices=[]; _pipeInvoices=[];
+    showToast(`✅ ${imported} חשבוניות יובאו בהצלחה`);
+  } catch {
+    resultEl.innerHTML = '<span style="color:var(--re)">⚠ שגיאת רשת – נסה שנית</span>';
+  }
+}
+
+function clearInvoiceExcel() {
+  _pendingInvRows=[];
+  document.getElementById('inv-excel-preview').classList.add('hidden');
+  document.getElementById('inv-excel-input').value='';
+  document.getElementById('inv-file-name').textContent='';
+}
+
+function downloadInvoiceTemplate() {
+  const wb = XLSX.utils.book_new();
+  // Invoices sheet
+  const ws1 = XLSX.utils.aoa_to_sheet([
+    ['invoice_id','vendor','awb','date','month','currency','po','total_amount','vat_amount','status'],
+    ['VENDOR-00001','שם הספק','AWB123','01/01/2026','2026-01','ILS','PO-2026-0001',5000,900,'pending'],
+  ]);
+  XLSX.utils.book_append_sheet(wb,ws1,'Sheet1');
+  // Lines sheet
+  const ws2 = XLSX.utils.aoa_to_sheet([
+    ['invoice_id','line_no','desc_raw','imp_code','billed_amount','agreed_price','ok','vat_exempt','note'],
+    ['VENDOR-00001',1,'הובלה ימית','IMP-001',3500,3500,true,false,''],
+    ['VENDOR-00001',2,'עמילות','IMP-030',500,500,true,false,''],
+    ['VENDOR-00001',3,'מע"מ','IMP-099',900,'',true,true,''],
+  ]);
+  XLSX.utils.book_append_sheet(wb,ws2,'Lines');
+  XLSX.writeFile(wb,'Invoice_Template.xlsx');
+}
+
+// ── APPROVE LINE via API (Phase 5) ────────────────────────────────────────────
+async function approveLinePI(invoiceId, lineNo, btn) {
+  btn.textContent = '...';
+  btn.disabled = true;
+  try {
+    const res  = await fetch(`${API_BASE}/invoices/${encodeURIComponent(invoiceId)}/lines/${lineNo}`, {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({user:'frontend'}),
+      signal: AbortSignal.timeout(5000),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      btn.closest('tr').className = 'pc-row-ok';
+      btn.parentElement.innerHTML = '<span class="tag tag-gr" style="font-size:10px">✓ אושר</span>';
+      logAction('APPROVE_LINE', `${invoiceId} · שורה ${lineNo}`, 'ok');
+      // If the whole invoice is now approved, refresh pipeline list
+      if (data.invoice_status === 'approved') {
+        showToast(`✅ חשבונית ${invoiceId} – כל השורות אושרו`);
+        _dashInvoices=[]; _pipeInvoices=[];
+        renderPipelineList();
+        loadDashboard(true);
+      }
+    } else {
+      btn.textContent='שגיאה'; btn.disabled=false;
+      showToast(`⚠ ${data.error||'שגיאה לא ידועה'}`);
+    }
+  } catch {
+    // Fallback: optimistic local update
+    btn.closest('tr').className = 'pc-row-ok';
+    btn.parentElement.innerHTML = '<span class="tag tag-gr" style="font-size:10px">✓ (מקומי)</span>';
+    logAction('APPROVE_LINE', `${invoiceId} · שורה ${lineNo} (מקומי)`, 'ok');
   }
 }
 

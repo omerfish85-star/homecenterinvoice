@@ -1,16 +1,33 @@
 imp_code,desc_he,desc_en,imp_name,category,keyword_pattern,confidence
-IMP-001,הובלה ימית,Ocean Freight,הובלה ימית,שילוח,הובל.*ים|ocean freight|sea freight,99
-IMP-002,הובלה אווירית,Air Freight,הובלה אווירית,שילוח,הובל.*אווירי|air freight,99
-IMP-003,היטל דלק,Fuel Surcharge,היטל דלק,שילוח,היטל\s*דלק|fuel surcharge|baf,97
-IMP-004,עמלת טיפול,Handling Fee,עמלת טיפול,שילוח,עמל.*טיפול|handling,95
-IMP-005,ביטוח מטען,Cargo Insurance,ביטוח מטען,שילוח,ביטוח|insurance,98
-IMP-010,דמי שחרור,Release Fee,דמי שחרור מכס,עמילות,דמי\s*שחרור|release fee,99
-IMP-011,אגרת מחשב,System Fee,אגרת מחשב מכס,עמילות,אגרת\s*מחשב|system fee,98
-IMP-012,דמי אחסנה,Storage Fee,דמי אחסנה נמל,עמילות,אחסנ|storage,96
-IMP-013,בדיקת מכס,Customs Inspection,בדיקת מכס,עמילות,בדיקת\s*מכס|inspection,99
-IMP-020,מכס יבוא,Customs Duty,מכס יבוא,מכס,דמי\s*מכס|customs duty|מכס,99
-IMP-021,היטל אבטחה,Security Surcharge,היטל אבטחה,שילוח,היטל\s*אבטחה|security surcharge,94
-IMP-023,מיסוי נמל,Port Tax,אגרת נמל ומיסוי,עמילות,מיסוי\s*נמל|מיסי\s*נמל|port tax|port levy,96
-IMP-030,דמי סוכן עמילות,Agency Fee,דמי סוכן עמילות,עמילות,עמילות|agency fee,97
-IMP-031,שחרור מסמכים,Document Release,שחרור מסמכים,עמילות,שחרור\s*מסמכים|document release,95
-IMP-099,מע"מ,VAT,מע"מ,מס,מע["\']?מ|vat,99
+IMP-001,הובלה ימית,Ocean Freight,הובלה ימית,שילוח,הובל.*ים|ocean freight|sea freight|FCL|LCL,99
+IMP-002,הובלה אווירית,Air Freight,הובלה אווירית,שילוח,הובל.*אווירי|air freight|air cargo,99
+IMP-003,היטל דלק,Fuel Surcharge,היטל דלק,שילוח,היטל\s*דלק|fuel surcharge|baf|bunker|YAS,97
+IMP-004,עמלת טיפול,Handling Fee,עמלת טיפול,שילוח,עמל.*טיפול|handling fee|handling charge,95
+IMP-005,ביטוח מטען,Cargo Insurance,ביטוח מטען,ביטוח,ביטוח\s*מטען|cargo insurance|insurance,90
+IMP-006,אחסנה בנמל,Port Storage,אחסנה בנמל,נמל,אחסנ|demurrage|storage|detention,88
+IMP-007,הובלה יבשתית,Inland Transport,הובלה יבשתית,שילוח,הובל.*יבשת|inland transport|trucking|delivery,88
+IMP-008,תוספת עונה עמוסה,Peak Season Surcharge,PSS,שילוח,peak season|PSS|עונה עמוסה,85
+IMP-009,תוספת בטחון,Security Surcharge,Security Surcharge,בטחון,security surcharge|תוספת בטח|ISPS,90
+IMP-010,דמי שחרור מטען,Cargo Release Fee,דמי שחרור,עמילות,שחרור\s*מטען|דמי\s*שחרור|cargo release|release fee|bill of lading,95
+IMP-011,אגרת מחשב מכס,Customs Computer Fee,אגרת מחשב,עמילות,אגרת\s*מחשב|customs.*computer|מחשב\s*מכס|system fee,97
+IMP-012,דמי ניטול,Loading/Unloading Fee,דמי ניטול,נמל,ניטול|loading fee|unloading fee|דמי\s*אחסנ|storage,92
+IMP-013,בדיקת מכס,Customs Inspection,בדיקת מכס,עמילות,בדיקת\s*מכס|customs inspection|פיקוח\s*מכס,99
+IMP-014,מסוף מכולות,Container Terminal,דמי מסוף,נמל,מסוף\s*מכולות|container terminal|THC|terminal handling,93
+IMP-015,ביקורת פיטוסניטרית,Phytosanitary Inspection,ביקורת פיטו,בקרה,פיטוסניטר|phytosanitary|plant inspection,85
+IMP-016,עמילות יצוא,Export Brokerage,עמילות יצוא,עמילות,עמילות\s*יצוא|export brokerage|export customs,88
+IMP-017,אגרת רדיוטלגרם,Radiogram Fee,אגרת רדיו,מכס,רדיוטלגרם|radiogram,80
+IMP-018,דמי ניהול,Management Fee,דמי ניהול,שירות,דמי\s*ניהול|management fee|admin fee,85
+IMP-019,השלמת מכס,Customs Supplement,השלמת מכס,מכס,השלמת\s*מכס|customs supplement,88
+IMP-020,דמי מכס,Customs Duty,דמי מכס,מכס,דמי\s*מכס|customs duty|import duty|מכס\s*ייבוא,99
+IMP-021,היטל אבטחה,Security Charge,היטל אבטחה,בטחון,היטל\s*אבטחה|security charge|security fee|SRC charge,90
+IMP-022,ביקורת וטרינרית,Veterinary Inspection,ביקורת וטרינרית,בקרה,וטרינר|veterinary|vet inspection,85
+IMP-023,מיסי נמל,Port Tax,אגרת נמל,עמילות,מיסי\s*נמל|מיסוי\s*נמל|port tax|port duty|port fees|port charges,97
+IMP-024,עמלת חריגה ממשקל,Overweight Surcharge,חריגת משקל,שילוח,חריגה.*משקל|overweight|over weight,85
+IMP-025,פיקדון מכולה,Container Deposit,פיקדון מכולה,נמל,פיקדון\s*מכולה|container deposit,88
+IMP-026,אחסנה יבשתית,Inland Storage,אחסנה יבשתית,שילוח,אחסנה\s*יבשת|inland storage|warehouse,85
+IMP-027,היטל פיקוח,Inspection Surcharge,היטל פיקוח,בקרה,היטל\s*פיקוח|inspection surcharge|oversight,82
+IMP-028,ניהול מסמכים,Documentation Fee,דמי מסמכים,שירות,שחרור\s*מסמכים|document release|documentation|doc fee,88
+IMP-029,שירות מהיר,Express Service,שירות מהיר,שירות,שירות\s*מהיר|express service|expedite,85
+IMP-030,עמילות יבוא,Customs Brokerage,עמילות יבוא,עמילות,עמילות|brokerage|customs broker|עמיל\s*מכס|agency fee,97
+IMP-031,תוספת ייעוץ,Advisory Fee,תוספת ייעוץ,שירות,ייעוץ|advisory|consulting,80
+IMP-099,מע"מ,VAT,מע"מ,מס,מע["']?מ|vat|value added tax|מס\s*ערך\s*מוסף|מע"מ\s*ייבוא,99

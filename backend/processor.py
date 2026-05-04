@@ -475,6 +475,188 @@ def m3_export_to_excel(commands: list[dict]) -> bytes:
     return buf.getvalue()
 
 
+def update_invoice_status(dfs: dict, invoice_id: str, new_status: str,
+                          user: str = "system") -> tuple[bool, str | None]:
+    """
+    Update the status of a single invoice.
+    Returns (success, error_message).
+    """
+    VALID = {"pending", "approved", "discrepancy", "exported"}
+    if new_status not in VALID:
+        return False, f"Invalid status '{new_status}'. Must be one of: {', '.join(VALID)}"
+
+    mask = dfs["invoices"]["invoice_id"] == invoice_id
+    if not mask.any():
+        return False, f"Invoice '{invoice_id}' not found"
+
+    old_status = str(dfs["invoices"].loc[mask, "status"].iloc[0])
+    dfs["invoices"].loc[mask, "status"] = new_status
+    _save(dfs["invoices"], "invoices.csv")
+    append_audit(dfs, "STATUS_UPDATE",
+                 f"{invoice_id}: {old_status} → {new_status}", "ok", user)
+    return True, None
+
+
+def approve_invoice_line(dfs: dict, invoice_id: str, line_no: int,
+                         user: str = "system") -> tuple[bool, str | None]:
+    """
+    Mark a single invoice line as approved (ok=True).
+    If all lines of the invoice are now ok, set the invoice status to 'approved'.
+    Returns (success, error_message).
+    """
+    lines = dfs["invoice_lines"]
+    mask  = (lines["invoice_id"] == invoice_id) & (lines["line_no"] == line_no)
+    if not mask.any():
+        return False, f"Line {line_no} of invoice '{invoice_id}' not found"
+
+    dfs["invoice_lines"].loc[mask, "ok"] = True
+    dfs["invoice_lines"].loc[mask, "note"] = "אושר ידנית"
+    _save(dfs["invoice_lines"], "invoice_lines.csv")
+
+    # Check if all lines of this invoice are now ok
+    inv_lines = dfs["invoice_lines"][dfs["invoice_lines"]["invoice_id"] == invoice_id]
+    all_ok = all(
+        str(v).lower() not in ("false", "0", "")
+        for v in inv_lines["ok"]
+    )
+    if all_ok:
+        inv_mask = dfs["invoices"]["invoice_id"] == invoice_id
+        dfs["invoices"].loc[inv_mask, "status"] = "approved"
+        _save(dfs["invoices"], "invoices.csv")
+
+    append_audit(dfs, "APPROVE_LINE",
+                 f"{invoice_id} · שורה {line_no} אושרה ידנית", "ok", user)
+    return True, None
+
+
+def add_invoice(dfs: dict, data: dict) -> tuple[dict, str | None]:
+    """
+    Create a new invoice with its line items.
+    data keys: invoice_id, vendor, date, month, currency, total_amount, vat_amount, status,
+               po, awb, vessel, port_of_loading, container,
+               lines: list of {line_no, desc_raw, imp_code, billed_amount, agreed_price,
+                               ok, vat_exempt, note}
+    Returns (invoice_record, error_message).
+    """
+    invoice_id = str(data.get("invoice_id", "")).strip()
+    vendor     = str(data.get("vendor", "")).strip()
+    if not invoice_id or not vendor:
+        return {}, "invoice_id and vendor are required"
+
+    if invoice_id in dfs["invoices"]["invoice_id"].values:
+        return {}, f"Invoice '{invoice_id}' already exists"
+
+    try:
+        total_amount = float(data.get("total_amount") or 0)
+    except (ValueError, TypeError):
+        return {}, "total_amount must be a number"
+
+    new_inv = {
+        "invoice_id":      invoice_id,
+        "vendor":          vendor,
+        "awb":             str(data.get("awb", "")),
+        "date":            str(data.get("date", "")),
+        "month":           str(data.get("month", "")),
+        "currency":        str(data.get("currency", "ILS")),
+        "po":              str(data.get("po", "")),
+        "vessel":          str(data.get("vessel", "")),
+        "port_of_loading": str(data.get("port_of_loading", "")),
+        "container":       str(data.get("container", "")),
+        "total_amount":    total_amount,
+        "vat_amount":      float(data.get("vat_amount") or 0),
+        "status":          str(data.get("status", "pending")),
+        "erp_status":      str(data.get("erp_status", "ממתין")),
+    }
+
+    dfs["invoices"] = pd.concat(
+        [dfs["invoices"], pd.DataFrame([new_inv])], ignore_index=True
+    )
+    _save(dfs["invoices"], "invoices.csv")
+
+    # Import line items
+    lines_added = 0
+    for line in data.get("lines", []):
+        try:
+            billed = float(line.get("billed_amount") or 0)
+        except (ValueError, TypeError):
+            billed = 0.0
+        try:
+            agreed = float(line.get("agreed_price")) if line.get("agreed_price") not in (None, "") else None
+        except (ValueError, TypeError):
+            agreed = None
+
+        new_line = {
+            "invoice_id":       invoice_id,
+            "line_no":          int(line.get("line_no", lines_added + 1)),
+            "desc_raw":         str(line.get("desc_raw", "")),
+            "imp_code":         str(line.get("imp_code", "")),
+            "match_confidence": int(line.get("match_confidence") or 0),
+            "agreed_price":     agreed,
+            "billed_amount":    billed,
+            "ok":               str(line.get("ok", "")).lower() in ("true", "1", "yes"),
+            "vat_exempt":       str(line.get("vat_exempt", "")).lower() in ("true", "1", "yes"),
+            "note":             str(line.get("note", "")),
+        }
+        dfs["invoice_lines"] = pd.concat(
+            [dfs["invoice_lines"], pd.DataFrame([new_line])], ignore_index=True
+        )
+        lines_added += 1
+
+    if lines_added:
+        _save(dfs["invoice_lines"], "invoice_lines.csv")
+
+    append_audit(dfs, "ADD_INVOICE",
+                 f"{invoice_id} – {vendor} · {lines_added} שורות", "ok", "frontend")
+    return new_inv, None
+
+
+def import_invoices_excel(dfs: dict, file_bytes: bytes) -> dict:
+    """
+    Parse an Excel/CSV upload for invoices.
+    Required sheet/columns for invoices: invoice_id, vendor, date, month, currency, total_amount
+    Optional 'Lines' sheet: invoice_id, line_no, desc_raw, imp_code, billed_amount
+    Returns {imported, skipped, errors}.
+    """
+    try:
+        src = io.BytesIO(file_bytes)
+        if file_bytes[:4] in (b'PK\x03\x04', b'\xd0\xcf\x11\xe0'):
+            xf  = pd.ExcelFile(src)
+            inv_df  = pd.read_excel(xf, sheet_name=xf.sheet_names[0])
+            line_df = pd.read_excel(xf, sheet_name="Lines") if "Lines" in xf.sheet_names else None
+        else:
+            inv_df  = pd.read_csv(io.BytesIO(file_bytes))
+            line_df = None
+    except Exception as e:
+        return {"imported": 0, "skipped": 0, "errors": [str(e)]}
+
+    inv_df.columns  = [c.strip().lower().replace(" ", "_") for c in inv_df.columns]
+    required = ["invoice_id", "vendor", "date", "month", "currency", "total_amount"]
+    missing  = [c for c in required if c not in inv_df.columns]
+    if missing:
+        return {"imported": 0, "skipped": 0,
+                "errors": [f"Missing columns in invoice sheet: {', '.join(missing)}"]}
+
+    if line_df is not None:
+        line_df.columns = [c.strip().lower().replace(" ", "_") for c in line_df.columns]
+
+    imported, skipped, errors = 0, 0, []
+    for i, row in inv_df.iterrows():
+        rec = row.where(pd.notna(row), "").to_dict()
+        # Attach lines if available
+        if line_df is not None:
+            inv_id = str(rec.get("invoice_id", "")).strip()
+            lines  = line_df[line_df["invoice_id"] == inv_id].to_dict(orient="records")
+            rec["lines"] = lines
+        _, err = add_invoice(dfs, rec)
+        if err:
+            skipped += 1
+            errors.append(f"Row {i + 2}: {err}")
+        else:
+            imported += 1
+
+    return {"imported": imported, "skipped": skipped, "errors": errors}
+
+
 def mark_invoices_exported(dfs: dict, invoice_ids: list[str], user: str = "system") -> int:
     """Set status → 'approved' and erp_status → 'נשלח ל-M3' for given invoices."""
     mask = dfs["invoices"]["invoice_id"].isin(invoice_ids)
