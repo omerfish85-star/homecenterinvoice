@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: homecenter-invoice
+    runtime: docker
+    plan: free
+    region: frankfurt
